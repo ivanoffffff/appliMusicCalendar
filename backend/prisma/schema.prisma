@@ -18,7 +18,8 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  favorites UserFavorite[]
+  favorites     UserFavorite[]
+  spotifyToken  SpotifyToken?
 
   @@map("users")
 }
@@ -27,7 +28,7 @@ model Artist {
   id          String   @id @default(cuid())
   spotifyId   String?  @unique
   name        String
-  genres      String   // JSON string pour simplicité
+  genres      String   // JSON string
   imageUrl    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -62,10 +63,10 @@ model Release {
   releaseDate DateTime
   imageUrl    String?
   spotifyUrl  String?
-  trackCount  Int?        // AJOUTÉ: Nombre de pistes
-  duration    Int?        // AJOUTÉ: Durée en secondes
-  isExplicit  Boolean     @default(false) // AJOUTÉ: Contenu explicite
-  popularity  Int?        // AJOUTÉ: Popularité Spotify
+  trackCount  Int?
+  duration    Int?
+  isExplicit  Boolean     @default(false)
+  popularity  Int?
   artistId    String
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -74,6 +75,22 @@ model Release {
   artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
 
   @@map("releases")
+}
+
+model SpotifyToken {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  scope        String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("spotify_tokens")
 }
 
 enum ReleaseType {

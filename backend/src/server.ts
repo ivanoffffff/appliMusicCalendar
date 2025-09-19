@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import artistRoutes from './routes/artists';
 import releaseRoutes from './routes/releases';
+import spotifyOAuthRoutes from './routes/spotifyOAuth';
 
 dotenv.config();
 
@@ -33,6 +34,9 @@ app.use('/api/artists', artistRoutes);
 // Routes pour les sorties musicales
 app.use('/api/releases', releaseRoutes);
 
+// Routes pour OAuth Spotify
+app.use('/api/spotify', spotifyOAuthRoutes);
+
 // Gestion des erreurs globales
 app.use((err: any, req: any, res: any, next: any) => {
   console.error(err.stack);
@@ -48,4 +52,5 @@ app.listen(PORT, () => {
   console.log(`   Auth: POST/GET /api/auth/*`);
   console.log(`   Artists: GET /api/artists/*`);
   console.log(`   Releases: GET/POST /api/releases/*`);
+  console.log(`   Spotify OAuth: GET/POST /api/spotify/*`);
 });

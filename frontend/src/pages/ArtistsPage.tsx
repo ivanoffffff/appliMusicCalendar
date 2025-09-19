@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { Artist, FavoriteArtist } from '../types';
 import { artistService } from '../services/api';
 import ArtistCard from '../components/artists/ArtistCard';
+import SpotifyConnection from '../components/spotify/SpotifyConnection';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const ArtistsPage: React.FC = () => {
@@ -13,7 +14,7 @@ const ArtistsPage: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'favorites' | 'spotify'>('favorites');
 
   // Charger les favoris au montage du composant
   useEffect(() => {
@@ -86,6 +87,14 @@ const ArtistsPage: React.FC = () => {
     return favorites.some(fav => fav.artist.spotifyId === artist.spotifyId);
   };
 
+  const handleSpotifySyncComplete = () => {
+    // Recharger les favoris après une synchronisation Spotify
+    loadFavorites();
+  };
+
+  const spotifyImportedFavorites = favorites.filter(fav => fav.category === 'spotify-import');
+  const regularFavorites = favorites.filter(fav => fav.category !== 'spotify-import');
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -94,6 +103,12 @@ const ArtistsPage: React.FC = () => {
           <h1 className="text-xl font-bold text-gray-900">🎵 Music Tracker</h1>
           <div className="flex items-center space-x-4">
             <span className="text-gray-700">👋 {user?.firstName || user?.username}</span>
+            <a
+              href="/releases"
+              className="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700"
+            >
+              Calendrier
+            </a>
             <a
               href="/dashboard"
               className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700"
@@ -115,16 +130,6 @@ const ArtistsPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex space-x-8">
             <button
-              onClick={() => setActiveTab('search')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'search'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              🔍 Rechercher des artistes
-            </button>
-            <button
               onClick={() => setActiveTab('favorites')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'favorites'
@@ -134,12 +139,143 @@ const ArtistsPage: React.FC = () => {
             >
               ❤️ Mes favoris ({favorites.length})
             </button>
+            <button
+              onClick={() => setActiveTab('spotify')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'spotify'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              🎵 Synchronisation Spotify
+            </button>
+            <button
+              onClick={() => setActiveTab('search')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'search'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              🔍 Rechercher des artistes
+            </button>
           </div>
         </div>
       </div>
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
+        {activeTab === 'spotify' && (
+          <div className="max-w-2xl mx-auto">
+            <SpotifyConnection onSyncComplete={handleSpotifySyncComplete} />
+          </div>
+        )}
+
+        {activeTab === 'favorites' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Mes artistes favoris
+              </h2>
+              <button
+                onClick={() => setActiveTab('spotify')}
+                className="bg-green-600 text-white px-4 py-2 rounded-md text-sm hover:bg-green-700"
+              >
+                🎵 Importer depuis Spotify
+              </button>
+            </div>
+            
+            {isLoadingFavorites ? (
+              <div className="flex justify-center py-8">
+                <LoadingSpinner size="lg" />
+              </div>
+            ) : favorites.length > 0 ? (
+              <div className="space-y-6">
+                {/* Artistes importés de Spotify */}
+                {spotifyImportedFavorites.length > 0 && (
+                  <div>
+                    <h3 className="text-md font-medium text-gray-700 mb-4 flex items-center">
+                      <span className="text-green-600 mr-2">🎵</span>
+                      Importés depuis Spotify ({spotifyImportedFavorites.length})
+                    </h3>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+                      {spotifyImportedFavorites.map((favorite) => (
+                        <ArtistCard
+                          key={favorite.id}
+                          artist={{
+                            spotifyId: favorite.artist.spotifyId!,
+                            name: favorite.artist.name,
+                            genres: favorite.artist.genres,
+                            imageUrl: favorite.artist.imageUrl || undefined,
+                            popularity: 0,
+                            followers: 0,
+                            spotifyUrl: `https://open.spotify.com/artist/${favorite.artist.spotifyId}`,
+                          }}
+                          isFavorite={true}
+                          onToggleFavorite={handleToggleFavorite}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Artistes ajoutés manuellement */}
+                {regularFavorites.length > 0 && (
+                  <div>
+                    <h3 className="text-md font-medium text-gray-700 mb-4 flex items-center">
+                      <span className="text-blue-600 mr-2">⭐</span>
+                      Ajoutés manuellement ({regularFavorites.length})
+                    </h3>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+                      {regularFavorites.map((favorite) => (
+                        <ArtistCard
+                          key={favorite.id}
+                          artist={{
+                            spotifyId: favorite.artist.spotifyId!,
+                            name: favorite.artist.name,
+                            genres: favorite.artist.genres,
+                            imageUrl: favorite.artist.imageUrl || undefined,
+                            popularity: 0,
+                            followers: 0,
+                            spotifyUrl: `https://open.spotify.com/artist/${favorite.artist.spotifyId}`,
+                          }}
+                          isFavorite={true}
+                          onToggleFavorite={handleToggleFavorite}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="bg-white rounded-lg shadow-md p-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Aucun artiste favori
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Commencez par importer vos artistes depuis Spotify ou recherchez-en de nouveaux !
+                  </p>
+                  <div className="space-x-4">
+                    <button
+                      onClick={() => setActiveTab('spotify')}
+                      className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700"
+                    >
+                      🎵 Importer depuis Spotify
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('search')}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+                    >
+                      🔍 Rechercher des artistes
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'search' && (
           <div>
             {/* Formulaire de recherche */}
@@ -199,49 +335,6 @@ const ArtistsPage: React.FC = () => {
             ) : (
               <div className="text-center py-8">
                 <p className="text-gray-500">🔍 Utilisez la barre de recherche pour trouver des artistes</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'favorites' && (
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Mes artistes favoris
-            </h2>
-            
-            {isLoadingFavorites ? (
-              <div className="flex justify-center py-8">
-                <LoadingSpinner size="lg" />
-              </div>
-            ) : favorites.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-                {favorites.map((favorite) => (
-                  <ArtistCard
-                    key={favorite.id}
-                    artist={{
-                      spotifyId: favorite.artist.spotifyId!,
-                      name: favorite.artist.name,
-                      genres: favorite.artist.genres,
-                      imageUrl: favorite.artist.imageUrl || undefined,
-                      popularity: 0, // Pas stocké en base pour l'instant
-                      followers: 0, // Pas stocké en base pour l'instant
-                      spotifyUrl: `https://open.spotify.com/artist/${favorite.artist.spotifyId}`,
-                    }}
-                    isFavorite={true}
-                    onToggleFavorite={handleToggleFavorite}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500 mb-4">Vous n'avez pas encore d'artistes favoris</p>
-                <button
-                  onClick={() => setActiveTab('search')}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                >
-                  Rechercher des artistes
-                </button>
               </div>
             )}
           </div>
