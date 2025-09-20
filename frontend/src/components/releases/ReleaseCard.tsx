@@ -140,21 +140,6 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, onPlaySpotify }) => 
                 <span>Favoris</span>
               </button>
             </div>
-
-            {/* Indicateur de date */}
-            <div className="text-xs text-secondary">
-              {new Date(release.releaseDate) > new Date() ? (
-                <span className="flex items-center space-x-1 text-blue-600 dark:text-blue-400">
-                  <span>🔮</span>
-                  <span>À venir</span>
-                </span>
-              ) : (
-                <span className="flex items-center space-x-1">
-                  <span>✅</span>
-                  <span>Disponible</span>
-                </span>
-              )}
-            </div>
           </div>
         </div>
       </div>
