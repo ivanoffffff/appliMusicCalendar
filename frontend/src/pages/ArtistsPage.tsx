@@ -1,22 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import type { Artist, FavoriteArtist } from '../types';
 import { artistService } from '../services/api';
 import ArtistCard from '../components/artists/ArtistCard';
-import SpotifyConnection from '../components/spotify/SpotifyConnection';
+import Header from '../components/ui/Header';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const ArtistsPage: React.FC = () => {
-  const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Artist[]>([]);
   const [favorites, setFavorites] = useState<FavoriteArtist[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'search' | 'favorites' | 'spotify'>('favorites');
+  const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('search');
 
-  // Charger les favoris au montage du composant
   useEffect(() => {
     loadFavorites();
   }, []);
@@ -64,17 +61,15 @@ const ArtistsPage: React.FC = () => {
       );
 
       if (isCurrentlyFavorite) {
-        // Supprimer des favoris
         const favorite = favorites.find(fav => fav.artist.spotifyId === artist.spotifyId);
         if (favorite) {
           await artistService.removeFromFavorites(favorite.artist.id);
           setFavorites(prev => prev.filter(fav => fav.id !== favorite.id));
         }
       } else {
-        // Ajouter aux favoris
         const response = await artistService.addToFavorites(artist.spotifyId, 'default');
         if (response.success) {
-          await loadFavorites(); // Recharger pour avoir les données complètes
+          await loadFavorites();
         }
       }
     } catch (err) {
@@ -87,77 +82,38 @@ const ArtistsPage: React.FC = () => {
     return favorites.some(fav => fav.artist.spotifyId === artist.spotifyId);
   };
 
-  const handleSpotifySyncComplete = () => {
-    // Recharger les favoris après une synchronisation Spotify
-    loadFavorites();
-  };
-
-  const spotifyImportedFavorites = favorites.filter(fav => fav.category === 'spotify-import');
-  const regularFavorites = favorites.filter(fav => fav.category !== 'spotify-import');
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-900">🎵 Music Tracker</h1>
-          <div className="flex items-center space-x-4">
-            <span className="text-gray-700">👋 {user?.firstName || user?.username}</span>
-            <a
-              href="/releases"
-              className="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700"
-            >
-              Calendrier
-            </a>
-            <a
-              href="/dashboard"
-              className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700"
-            >
-              Dashboard
-            </a>
-            <button
-              onClick={logout}
-              className="bg-red-600 text-white px-3 py-1 rounded-md text-sm hover:bg-red-700"
-            >
-              Déconnexion
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-primary">
+      <Header />
 
-      {/* Tabs */}
-      <div className="bg-white border-b">
+      {/* Tabs avec glassmorphism */}
+      <div className="sticky top-[89px] z-40 bg-secondary/80 backdrop-blur-md border-b border-custom">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex space-x-8">
             <button
-              onClick={() => setActiveTab('favorites')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'favorites'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              ❤️ Mes favoris ({favorites.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('spotify')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'spotify'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              🎵 Synchronisation Spotify
-            </button>
-            <button
               onClick={() => setActiveTab('search')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
                 activeTab === 'search'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-secondary hover:text-primary'
               }`}
             >
               🔍 Rechercher des artistes
+            </button>
+            <button
+              onClick={() => setActiveTab('favorites')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 relative ${
+                activeTab === 'favorites'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-secondary hover:text-primary'
+              }`}
+            >
+              ❤️ Mes favoris
+              {favorites.length > 0 && (
+                <span className="ml-2 px-2 py-1 bg-primary-500 text-white text-xs rounded-full animate-pulse">
+                  {favorites.length}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -165,176 +121,169 @@ const ArtistsPage: React.FC = () => {
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {activeTab === 'spotify' && (
-          <div className="max-w-2xl mx-auto">
-            <SpotifyConnection onSyncComplete={handleSpotifySyncComplete} />
-          </div>
-        )}
-
-        {activeTab === 'favorites' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Mes artistes favoris
-              </h2>
-              <button
-                onClick={() => setActiveTab('spotify')}
-                className="bg-green-600 text-white px-4 py-2 rounded-md text-sm hover:bg-green-700"
-              >
-                🎵 Importer depuis Spotify
-              </button>
-            </div>
-            
-            {isLoadingFavorites ? (
-              <div className="flex justify-center py-8">
-                <LoadingSpinner size="lg" />
-              </div>
-            ) : favorites.length > 0 ? (
-              <div className="space-y-6">
-                {/* Artistes importés de Spotify */}
-                {spotifyImportedFavorites.length > 0 && (
-                  <div>
-                    <h3 className="text-md font-medium text-gray-700 mb-4 flex items-center">
-                      <span className="text-green-600 mr-2">🎵</span>
-                      Importés depuis Spotify ({spotifyImportedFavorites.length})
-                    </h3>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-                      {spotifyImportedFavorites.map((favorite) => (
-                        <ArtistCard
-                          key={favorite.id}
-                          artist={{
-                            spotifyId: favorite.artist.spotifyId!,
-                            name: favorite.artist.name,
-                            genres: favorite.artist.genres,
-                            imageUrl: favorite.artist.imageUrl || undefined,
-                            popularity: 0,
-                            followers: 0,
-                            spotifyUrl: `https://open.spotify.com/artist/${favorite.artist.spotifyId}`,
-                          }}
-                          isFavorite={true}
-                          onToggleFavorite={handleToggleFavorite}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Artistes ajoutés manuellement */}
-                {regularFavorites.length > 0 && (
-                  <div>
-                    <h3 className="text-md font-medium text-gray-700 mb-4 flex items-center">
-                      <span className="text-blue-600 mr-2">⭐</span>
-                      Ajoutés manuellement ({regularFavorites.length})
-                    </h3>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-                      {regularFavorites.map((favorite) => (
-                        <ArtistCard
-                          key={favorite.id}
-                          artist={{
-                            spotifyId: favorite.artist.spotifyId!,
-                            name: favorite.artist.name,
-                            genres: favorite.artist.genres,
-                            imageUrl: favorite.artist.imageUrl || undefined,
-                            popularity: 0,
-                            followers: 0,
-                            spotifyUrl: `https://open.spotify.com/artist/${favorite.artist.spotifyId}`,
-                          }}
-                          isFavorite={true}
-                          onToggleFavorite={handleToggleFavorite}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="bg-white rounded-lg shadow-md p-8">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Aucun artiste favori
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    Commencez par importer vos artistes depuis Spotify ou recherchez-en de nouveaux !
-                  </p>
-                  <div className="space-x-4">
-                    <button
-                      onClick={() => setActiveTab('spotify')}
-                      className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700"
-                    >
-                      🎵 Importer depuis Spotify
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('search')}
-                      className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
-                    >
-                      🔍 Rechercher des artistes
-                    </button>
-                  </div>
+        {activeTab === 'search' && (
+          <div className="animate-entrance">
+            {/* Formulaire de recherche amélioré */}
+            <div className="music-card mb-8">
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="text-3xl">🔍</div>
+                <div>
+                  <h2 className="text-xl font-bold text-primary">Rechercher des artistes</h2>
+                  <p className="text-secondary text-sm">Découvrez et ajoutez vos artistes préférés</p>
                 </div>
               </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'search' && (
-          <div>
-            {/* Formulaire de recherche */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+              
               <form onSubmit={handleSearch} className="flex space-x-4">
-                <div className="flex-1">
+                <div className="flex-1 relative">
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Rechercher un artiste (ex: Drake, Taylor Swift...)"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Rechercher un artiste (ex: Drake, Taylor Swift, Daft Punk...)"
+                    className="w-full px-4 py-3 bg-secondary/50 border border-custom rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 text-primary placeholder-secondary"
                   />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary hover:text-primary transition-colors duration-300"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
                 <button
                   type="submit"
                   disabled={isSearching || !searchQuery.trim()}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-primary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSearching ? 'Recherche...' : 'Rechercher'}
+                  {isSearching ? <LoadingSpinner size="sm" /> : 'Rechercher'}
                 </button>
               </form>
             </div>
 
-            {/* Erreurs */}
+            {/* Messages d'erreur */}
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6">
+              <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl animate-scale-in">
                 {error}
               </div>
             )}
 
             {/* Résultats de recherche */}
             {isSearching ? (
-              <div className="flex justify-center py-8">
-                <LoadingSpinner size="lg" />
+              <div className="flex flex-col items-center justify-center py-16">
+                <LoadingSpinner size="xl" type="musical" />
+                <p className="text-secondary mt-4">Recherche en cours...</p>
               </div>
             ) : searchResults.length > 0 ? (
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Résultats de recherche ({searchResults.length})
-                </h2>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-                  {searchResults.map((artist) => (
-                    <ArtistCard
-                      key={artist.spotifyId}
-                      artist={artist}
-                      isFavorite={isArtistFavorite(artist)}
-                      onToggleFavorite={handleToggleFavorite}
-                    />
+              <div className="animate-entrance-delay-1">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-primary">
+                    Résultats de recherche ({searchResults.length})
+                  </h3>
+                  <button
+                    onClick={() => setSearchResults([])}
+                    className="text-sm text-secondary hover:text-primary transition-colors duration-300"
+                  >
+                    Effacer les résultats
+                  </button>
+                </div>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
+                  {searchResults.map((artist, index) => (
+                    <div key={artist.spotifyId} className={`animate-entrance-delay-${Math.min(index + 1, 3)}`}>
+                      <ArtistCard
+                        artist={artist}
+                        isFavorite={isArtistFavorite(artist)}
+                        onToggleFavorite={handleToggleFavorite}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
             ) : searchQuery && !isSearching ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">Aucun résultat pour "{searchQuery}"</p>
+              <div className="text-center py-16">
+                <div className="text-6xl mb-4">😔</div>
+                <p className="text-secondary text-lg">Aucun résultat pour "{searchQuery}"</p>
+                <p className="text-secondary text-sm mt-2">Essayez avec un autre nom d'artiste</p>
               </div>
             ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500">🔍 Utilisez la barre de recherche pour trouver des artistes</p>
+              <div className="text-center py-16">
+                <div className="text-6xl mb-4 animate-bounce-subtle">🎵</div>
+                <p className="text-secondary text-lg mb-2">Découvrez de nouveaux artistes</p>
+                <p className="text-secondary text-sm">Utilisez la barre de recherche pour commencer</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'favorites' && (
+          <div className="animate-entrance">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-4">
+                <div className="text-3xl">❤️</div>
+                <div>
+                  <h2 className="text-xl font-bold text-primary">Mes artistes favoris</h2>
+                  <p className="text-secondary text-sm">
+                    {favorites.length === 0 
+                      ? "Aucun artiste favori pour le moment" 
+                      : `${favorites.length} artiste${favorites.length > 1 ? 's' : ''} dans vos favoris`
+                    }
+                  </p>
+                </div>
+              </div>
+              
+              {favorites.length > 0 && (
+                <button
+                  onClick={() => setActiveTab('search')}
+                  className="btn-secondary px-4 py-2 text-sm"
+                >
+                  + Ajouter des artistes
+                </button>
+              )}
+            </div>
+            
+            {isLoadingFavorites ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <LoadingSpinner size="xl" type="musical" />
+                <p className="text-secondary mt-4">Chargement de vos favoris...</p>
+              </div>
+            ) : favorites.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
+                {favorites.map((favorite, index) => (
+                  <div key={favorite.id} className={`animate-entrance-delay-${Math.min(index + 1, 3)}`}>
+                    <ArtistCard
+                      artist={{
+                        spotifyId: favorite.artist.spotifyId!,
+                        name: favorite.artist.name,
+                        genres: favorite.artist.genres,
+                        imageUrl: favorite.artist.imageUrl || undefined,
+                        popularity: 0,
+                        followers: 0,
+                        spotifyUrl: `https://open.spotify.com/artist/${favorite.artist.spotifyId}`,
+                      }}
+                      isFavorite={true}
+                      onToggleFavorite={handleToggleFavorite}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <div className="music-card max-w-md mx-auto">
+                  <div className="text-6xl mb-4">🎤</div>
+                  <h3 className="text-xl font-semibold text-primary mb-4">
+                    Aucun artiste favori
+                  </h3>
+                  <p className="text-secondary mb-6">
+                    Commencez par rechercher et ajouter vos artistes préférés pour suivre leurs sorties !
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('search')}
+                    className="btn-primary px-6 py-3"
+                  >
+                    🔍 Rechercher des artistes
+                  </button>
+                </div>
               </div>
             )}
           </div>

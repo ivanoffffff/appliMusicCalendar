@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import type { Artist } from '../../types';
-import { artistService } from '../../services/api';
 
 interface ArtistCardProps {
   artist: Artist;
@@ -14,6 +13,7 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
   onToggleFavorite 
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleToggleFavorite = async () => {
     if (!onToggleFavorite || isLoading) return;
@@ -36,73 +36,133 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
     return count.toString();
   };
 
+  const getGenreColor = (index: number) => {
+    const colors = [
+      'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300',
+      'bg-accent-100 text-accent-700 dark:bg-accent-900/30 dark:text-accent-300',
+      'bg-spotify-100 text-spotify-700 dark:bg-spotify-900/30 dark:text-spotify-300',
+    ];
+    return colors[index % colors.length];
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow">
+    <div className="group music-card card-hover animate-entrance">
       <div className="flex items-start space-x-4">
-        {/* Image de l'artiste */}
-        <div className="flex-shrink-0">
-          {artist.imageUrl ? (
-            <img
-              src={artist.imageUrl}
-              alt={artist.name}
-              className="w-16 h-16 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
-              <span className="text-2xl">🎤</span>
+        {/* Image de l'artiste avec effet de chargement */}
+        <div className="flex-shrink-0 relative">
+          <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gradient-to-br from-primary-200 to-accent-200 dark:from-primary-800 dark:to-accent-800">
+            {artist.imageUrl ? (
+              <>
+                {!imageLoaded && (
+                  <div className="w-full h-full shimmer bg-primary-200 dark:bg-primary-700" />
+                )}
+                <img
+                  src={artist.imageUrl}
+                  alt={artist.name}
+                  className={`w-full h-full object-cover transition-opacity duration-500 ${
+                    imageLoaded ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  onLoad={() => setImageLoaded(true)}
+                />
+              </>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-3xl animate-pulse">
+                🎤
+              </div>
+            )}
+          </div>
+          
+          {/* Badge de popularité */}
+          {artist.popularity > 70 && (
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center animate-bounce-subtle">
+              <span className="text-xs">🔥</span>
             </div>
           )}
         </div>
 
         {/* Informations de l'artiste */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-gray-900 truncate">
-            {artist.name}
-          </h3>
-          
-          {/* Genres */}
-          <div className="flex flex-wrap gap-1 mt-1">
-            {artist.genres.slice(0, 3).map((genre, index) => (
-              <span
-                key={index}
-                className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full"
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-bold text-primary truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
+                {artist.name}
+              </h3>
+              
+              {/* Genres avec couleurs */}
+              <div className="flex flex-wrap gap-1 mt-2">
+                {artist.genres.slice(0, 3).map((genre, index) => (
+                  <span
+                    key={index}
+                    className={`inline-block px-2 py-1 rounded-full text-xs font-medium transition-all duration-300 hover:scale-105 ${getGenreColor(index)}`}
+                  >
+                    {genre}
+                  </span>
+                ))}
+                {artist.genres.length > 3 && (
+                  <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                    +{artist.genres.length - 3}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Stats avec icônes */}
+          <div className="flex items-center space-x-4 text-sm text-secondary mb-3">
+            <div className="flex items-center space-x-1 group/stat">
+              <span className="group-hover/stat:scale-110 transition-transform duration-300">👥</span>
+              <span className="font-medium">{formatFollowers(artist.followers)}</span>
+            </div>
+            <div className="flex items-center space-x-1 group/stat">
+              <span className="group-hover/stat:scale-110 transition-transform duration-300">⭐</span>
+              <span className="font-medium">{artist.popularity}/100</span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              {/* Bouton favoris avec animation */}
+              <button
+                onClick={handleToggleFavorite}
+                disabled={isLoading}
+                className={`relative p-2 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 disabled:opacity-50 ${
+                  isFavorite
+                    ? 'bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 shadow-lg hover:shadow-xl'
+                    : 'bg-gray-100 text-gray-400 hover:bg-red-100 hover:text-red-500 dark:bg-gray-800 dark:text-gray-500 dark:hover:bg-red-900/30 dark:hover:text-red-400'
+                }`}
+                title={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
               >
-                {genre}
-              </span>
-            ))}
+                {isLoading ? (
+                  <div className="w-5 h-5 animate-spin">⏳</div>
+                ) : (
+                  <div className={`text-lg transition-transform duration-300 ${isFavorite ? 'animate-pulse' : ''}`}>
+                    {isFavorite ? '❤️' : '🤍'}
+                  </div>
+                )}
+              </button>
+
+              {/* Lien Spotify */}
+              <a
+                href={artist.spotifyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-spotify text-sm px-3 py-2 flex items-center space-x-1 hover:shadow-spotify"
+                title="Ouvrir sur Spotify"
+              >
+                <span>🎵</span>
+                <span>Spotify</span>
+              </a>
+            </div>
+
+            {/* Indicateur de tendance */}
+            {artist.popularity > 80 && (
+              <div className="flex items-center space-x-1 text-green-600 dark:text-green-400 animate-pulse">
+                <span className="text-sm">📈</span>
+                <span className="text-xs font-medium">Tendance</span>
+              </div>
+            )}
           </div>
-
-          {/* Stats */}
-          <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-            <span>👥 {formatFollowers(artist.followers)}</span>
-            <span>⭐ {artist.popularity}/100</span>
-          </div>
-        </div>
-
-        {/* Bouton favoris */}
-        <div className="flex flex-col items-end space-y-2">
-          <button
-            onClick={handleToggleFavorite}
-            disabled={isLoading}
-            className={`p-2 rounded-full transition-colors ${
-              isFavorite
-                ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-red-500'
-            } disabled:opacity-50`}
-          >
-            {isLoading ? '⏳' : isFavorite ? '❤️' : '🤍'}
-          </button>
-
-          {/* Lien Spotify */}
-          <a
-            href={artist.spotifyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-green-600 hover:text-green-700 text-sm"
-            title="Ouvrir sur Spotify"
-          >
-            🎵 Spotify
-          </a>
         </div>
       </div>
     </div>

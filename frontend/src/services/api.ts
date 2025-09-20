@@ -1,5 +1,5 @@
 import axios, { type AxiosResponse } from 'axios';
-import type { ApiResponse, LoginCredentials, RegisterData, User, Artist, FavoriteArtist } from '../types';
+import type { ApiResponse, LoginCredentials, RegisterData, User, Artist, FavoriteArtist, Release } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -83,8 +83,6 @@ export const artistService = {
   },
 };
 
-export default api;
-
 // Services pour les sorties musicales
 export const releaseService = {
   async syncReleases(): Promise<ApiResponse<Release[]>> {
@@ -102,25 +100,4 @@ export const releaseService = {
   },
 };
 
-// Services pour OAuth Spotify
-export const spotifyOAuthService = {
-  async getConnectionStatus(): Promise<ApiResponse<{ isConnected: boolean; connectedAt?: string }>> {
-    const response: AxiosResponse<ApiResponse<{ isConnected: boolean; connectedAt?: string }>> = await api.get('/spotify/status');
-    return response.data;
-  },
-
-  async initiateConnection(): Promise<ApiResponse<{ authUrl: string }>> {
-    const response: AxiosResponse<ApiResponse<{ authUrl: string }>> = await api.get('/spotify/connect');
-    return response.data;
-  },
-
-  async syncFavorites(): Promise<ApiResponse<{ imported: number; existing: number }>> {
-    const response: AxiosResponse<ApiResponse<{ imported: number; existing: number }>> = await api.post('/spotify/sync');
-    return response.data;
-  },
-
-  async disconnect(): Promise<ApiResponse<any>> {
-    const response: AxiosResponse<ApiResponse<any>> = await api.delete('/spotify/disconnect');
-    return response.data;
-  },
-};
+export default api;
