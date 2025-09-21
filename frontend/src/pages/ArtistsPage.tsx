@@ -257,8 +257,8 @@ const ArtistsPage: React.FC = () => {
                         name: favorite.artist.name,
                         genres: favorite.artist.genres,
                         imageUrl: favorite.artist.imageUrl || undefined,
-                        popularity: 0,
-                        followers: 0,
+                        popularity: favorite.artist.popularity || 0,
+                        followers: favorite.artist.followers || 0,
                         spotifyUrl: `https://open.spotify.com/artist/${favorite.artist.spotifyId}`,
                       }}
                       isFavorite={true}

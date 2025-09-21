@@ -48,6 +48,9 @@ export interface FavoriteArtist {
     name: string;
     genres: string[];
     imageUrl?: string;
+    popularity: number;
+    followers: number;
+    spotifyUrl: string;
   };
 }
 

@@ -96,18 +96,58 @@ class ArtistService {
       },
     });
 
-    return favorites.map(fav => ({
-      id: fav.id,
-      category: fav.category,
-      addedAt: fav.addedAt,
-      artist: {
-        id: fav.artist.id,
-        spotifyId: fav.artist.spotifyId,
-        name: fav.artist.name,
-        genres: JSON.parse(fav.artist.genres),
-        imageUrl: fav.artist.imageUrl,
-      },
-    }));
+    // Enrichir avec les données Spotify en temps réel
+    const enrichedFavorites = await Promise.all(
+      favorites.map(async (fav) => {
+        if (fav.artist.spotifyId) {
+          try {
+            // Récupérer les données fraîches depuis Spotify
+            const spotifyData = await spotifyService.getArtistById(fav.artist.spotifyId);
+            
+            if (spotifyData) {
+              return {
+                id: fav.id,
+                category: fav.category,
+                addedAt: fav.addedAt,
+                artist: {
+                  id: fav.artist.id,
+                  spotifyId: fav.artist.spotifyId,
+                  name: fav.artist.name,
+                  genres: JSON.parse(fav.artist.genres),
+                  imageUrl: fav.artist.imageUrl,
+                  // Données enrichies depuis Spotify
+                  followers: spotifyData.followers,
+                  popularity: spotifyData.popularity,
+                  spotifyUrl: spotifyData.spotifyUrl,
+                },
+              };
+            }
+          } catch (error) {
+            console.error(`Erreur enrichissement Spotify pour ${fav.artist.name}:`, error);
+          }
+        }
+        
+        // Fallback si pas de spotifyId ou erreur API
+        return {
+          id: fav.id,
+          category: fav.category,
+          addedAt: fav.addedAt,
+          artist: {
+            id: fav.artist.id,
+            spotifyId: fav.artist.spotifyId,
+            name: fav.artist.name,
+            genres: JSON.parse(fav.artist.genres),
+            imageUrl: fav.artist.imageUrl,
+            // Valeurs par défaut si pas de données Spotify
+            followers: 0,
+            popularity: 0,
+            spotifyUrl: fav.artist.spotifyId ? `https://open.spotify.com/artist/${fav.artist.spotifyId}` : '',
+          },
+        };
+      })
+    );
+
+    return enrichedFavorites;
   }
 }
 
