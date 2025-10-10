@@ -66,7 +66,7 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
                 />
               </>
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-3xl animate-pulse">
+              <div className="w-full h-full flex items-center justify-center text-4xl">
                 🎤
               </div>
             )}
@@ -81,34 +81,34 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
         </div>
 
         {/* Informations de l'artiste */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-primary truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
-                {artist.name}
-              </h3>
-              
-              {/* Genres avec couleurs */}
-              <div className="flex flex-wrap gap-1 mt-2">
+        <div className="flex-1 min-w-0 space-y-3">
+          <div>
+            <h3 className="font-semibold text-lg text-primary truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
+              {artist.name}
+            </h3>
+            
+            {/* Genres */}
+            {artist.genres && artist.genres.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
                 {artist.genres.slice(0, 3).map((genre, index) => (
                   <span
                     key={index}
-                    className={`inline-block px-2 py-1 rounded-full text-xs font-medium transition-all duration-300 hover:scale-105 ${getGenreColor(index)}`}
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium transition-all duration-300 hover:scale-105 ${getGenreColor(index)}`}
                   >
                     {genre}
                   </span>
                 ))}
                 {artist.genres.length > 3 && (
-                  <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                     +{artist.genres.length - 3}
                   </span>
                 )}
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Stats avec icônes */}
-          <div className="flex items-center space-x-4 text-sm text-secondary mb-3">
+          {/* Stats */}
+          <div className="flex items-center space-x-4 text-sm text-secondary">
             <div className="flex items-center space-x-1 group/stat">
               <span className="group-hover/stat:scale-110 transition-transform duration-300">👥</span>
               <span className="font-medium">{formatFollowers(artist.followers)}</span>
@@ -143,16 +143,32 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
               </button>
 
               {/* Lien Spotify */}
-              <a
-                href={artist.spotifyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-spotify text-sm px-3 py-2 flex items-center space-x-1 hover:shadow-spotify"
-                title="Ouvrir sur Spotify"
-              >
-                <span>🎵</span>
-                <span>Spotify</span>
-              </a>
+              {artist.spotifyUrl && (
+                <a
+                  href={artist.spotifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-spotify text-sm px-3 py-2 flex items-center space-x-1 hover:shadow-spotify"
+                  title="Ouvrir sur Spotify"
+                >
+                  <span>🎵</span>
+                  <span>Spotify</span>
+                </a>
+              )}
+
+              {/* 🆕 Lien Deezer */}
+              {artist.deezerUrl && (
+                <a
+                  href={artist.deezerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-gradient-to-r from-orange-500 to-pink-500 text-white text-sm px-3 py-2 rounded-xl flex items-center space-x-1 hover:shadow-lg hover:scale-105 transition-all duration-300 font-medium"
+                  title="Ouvrir sur Deezer"
+                >
+                  <span>🎧</span>
+                  <span>Deezer</span>
+                </a>
+              )}
             </div>
 
             {/* Indicateur de tendance */}

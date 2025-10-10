@@ -27,9 +27,16 @@ model User {
 model Artist {
   id          String   @id @default(cuid())
   spotifyId   String?  @unique
+  deezerId    String?  @unique
   name        String
   genres      String   // JSON string
   imageUrl    String?
+  
+  // 🆕 NOUVEAUX CHAMPS pour le cache
+  popularity  Int?     @default(0)
+  followers   Int?     @default(0)
+  lastSyncAt  DateTime? // Date de dernière synchronisation
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -58,11 +65,13 @@ model UserFavorite {
 model Release {
   id          String      @id @default(cuid())
   spotifyId   String?     @unique
+  deezerId    String?     @unique  // 🆕 NOUVEAU
   name        String
   releaseType ReleaseType
   releaseDate DateTime
   imageUrl    String?
   spotifyUrl  String?
+  deezerUrl   String?     // 🆕 NOUVEAU
   trackCount  Int?
   duration    Int?
   isExplicit  Boolean     @default(false)

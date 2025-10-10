@@ -1,6 +1,6 @@
 import prisma from '../config/database';
 import spotifyService from './spotifyService';
-import { NormalizedArtist } from '../types/spotify';
+import deezerService from './deezerService';
 
 interface SpotifyAlbum {
   id: string;
@@ -51,15 +51,41 @@ class ReleaseService {
               });
 
               if (!existingRelease) {
-                // Créer la nouvelle sortie
+                // 🆕 Chercher la sortie sur Deezer pour enrichir les données
+                let deezerId: string | undefined;
+                let deezerUrl: string | undefined;
+
+                if (artist.deezerId) {
+                  try {
+                    const deezerAlbums = await deezerService.getArtistAlbums(artist.deezerId, 50);
+                    
+                    // Chercher une correspondance par nom (en normalisant)
+                    const normalizedReleaseName = this.normalizeName(release.name);
+                    const matchingDeezerAlbum = deezerAlbums.find(
+                      album => this.normalizeName(album.name) === normalizedReleaseName
+                    );
+
+                    if (matchingDeezerAlbum) {
+                      deezerId = matchingDeezerAlbum.deezerId;
+                      deezerUrl = matchingDeezerAlbum.deezerUrl;
+                      console.log(`✅ Deezer match found for release: ${release.name}`);
+                    }
+                  } catch (error) {
+                    console.log(`⚠️ Could not find Deezer match for release: ${release.name}`);
+                  }
+                }
+
+                // Créer la nouvelle sortie avec les données Deezer si disponibles
                 const newRelease = await prisma.release.create({
                   data: {
                     spotifyId: release.id,
+                    deezerId: deezerId,        // 🆕 Ajout deezerId
                     name: release.name,
                     releaseType: this.mapAlbumType(release.album_type),
                     releaseDate: new Date(release.release_date),
                     imageUrl: release.images[0]?.url,
                     spotifyUrl: release.external_urls.spotify,
+                    deezerUrl: deezerUrl,      // 🆕 Ajout deezerUrl
                     trackCount: release.total_tracks,
                     artistId: artist.id,
                   },
@@ -140,6 +166,7 @@ class ReleaseService {
             id: true,
             name: true,
             spotifyId: true,
+            deezerId: true,  // 🆕 Inclure deezerId
           }
         }
       },
@@ -156,6 +183,16 @@ class ReleaseService {
       case 'compilation': return 'EP';
       default: return 'SINGLE';
     }
+  }
+
+  // 🆕 Fonction helper pour normaliser les noms (pour le matching)
+  private normalizeName(name: string): string {
+    return name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Retirer les accents
+      .replace(/[^a-z0-9\s]/g, '')     // Retirer caractères spéciaux
+      .trim();
   }
 }
 

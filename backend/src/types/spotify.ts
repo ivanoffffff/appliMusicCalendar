@@ -41,4 +41,8 @@ export interface NormalizedArtist {
   popularity: number;
   followers: number;
   spotifyUrl: string;
+  // 🆕 Ajout des champs Deezer (optionnels)
+  deezerId?: string;
+  deezerUrl?: string;
+  deezerFans?: number;
 }

@@ -36,6 +36,10 @@ export interface Artist {
   popularity: number;
   followers: number;
   spotifyUrl: string;
+  // 🆕 Champs Deezer (optionnels)
+  deezerId?: string;
+  deezerUrl?: string;
+  deezerFans?: number;
 }
 
 export interface FavoriteArtist {
@@ -50,7 +54,11 @@ export interface FavoriteArtist {
     imageUrl?: string;
     popularity: number;
     followers: number;
-    spotifyUrl: string;
+    spotifyUrl?: string;
+    // 🆕 Champs Deezer (optionnels)
+    deezerId?: string;
+    deezerUrl?: string;
+    deezerFans?: number;
   };
 }
 
@@ -76,7 +84,11 @@ export interface Release {
     id: string;
     name: string;
     spotifyId?: string;
+    deezerId?: string;  // 🆕 NOUVEAU
   };
+  // 🆕 Champs Deezer
+  deezerId?: string;
+  deezerUrl?: string;
 }
 
 export interface UserRelease {

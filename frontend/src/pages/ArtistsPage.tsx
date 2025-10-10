@@ -217,31 +217,7 @@ const ArtistsPage: React.FC = () => {
         )}
 
         {activeTab === 'favorites' && (
-          <div className="animate-entrance">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center space-x-4">
-                <div className="text-3xl">❤️</div>
-                <div>
-                  <h2 className="text-xl font-bold text-primary">Mes artistes favoris</h2>
-                  <p className="text-secondary text-sm">
-                    {favorites.length === 0 
-                      ? "Aucun artiste favori pour le moment" 
-                      : `${favorites.length} artiste${favorites.length > 1 ? 's' : ''} dans vos favoris`
-                    }
-                  </p>
-                </div>
-              </div>
-              
-              {favorites.length > 0 && (
-                <button
-                  onClick={() => setActiveTab('search')}
-                  className="btn-secondary px-4 py-2 text-sm"
-                >
-                  + Ajouter des artistes
-                </button>
-              )}
-            </div>
-            
+          <div className="animate-entrance-delay-1">
             {isLoadingFavorites ? (
               <div className="flex flex-col items-center justify-center py-16">
                 <LoadingSpinner size="xl" type="musical" />
@@ -254,12 +230,14 @@ const ArtistsPage: React.FC = () => {
                     <ArtistCard
                       artist={{
                         spotifyId: favorite.artist.spotifyId!,
+                        deezerId: favorite.artist.deezerId,  // 🆕 Ajout deezerId
                         name: favorite.artist.name,
                         genres: favorite.artist.genres,
                         imageUrl: favorite.artist.imageUrl || undefined,
                         popularity: favorite.artist.popularity || 0,
                         followers: favorite.artist.followers || 0,
-                        spotifyUrl: `https://open.spotify.com/artist/${favorite.artist.spotifyId}`,
+                        spotifyUrl: favorite.artist.spotifyUrl || `https://open.spotify.com/artist/${favorite.artist.spotifyId}`,
+                        deezerUrl: favorite.artist.deezerUrl,  // 🆕 Ajout deezerUrl
                       }}
                       isFavorite={true}
                       onToggleFavorite={handleToggleFavorite}
