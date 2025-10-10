@@ -1,6 +1,7 @@
 import prisma from '../config/database';
 import spotifyService from './spotifyService';
 import deezerService from './deezerService';
+import notificationService from './notificationService';
 
 interface SpotifyAlbum {
   id: string;
@@ -23,6 +24,51 @@ interface SpotifyNewReleasesResponse {
 }
 
 class ReleaseService {
+  
+  /**
+   * 🆕 NOUVELLE MÉTHODE : Synchronise les sorties pour TOUS les utilisateurs
+   * Utilisée par le cron pour la synchronisation automatique
+   */
+  async syncAllReleases(): Promise<void> {
+    try {
+      console.log('🔄 Début de la synchronisation globale des sorties...');
+      
+      // Récupérer tous les utilisateurs
+      const users = await prisma.user.findMany({
+        select: { id: true, username: true, email: true }
+      });
+
+      if (users.length === 0) {
+        console.log('⚠️ Aucun utilisateur trouvé');
+        return;
+      }
+
+      console.log(`👥 ${users.length} utilisateur(s) à synchroniser`);
+
+      let totalNewReleases = 0;
+
+      // Synchroniser les sorties pour chaque utilisateur
+      for (const user of users) {
+        try {
+          const result = await this.syncReleasesForUser(user.id);
+          totalNewReleases += result.releases.length;
+          
+          if (result.releases.length > 0) {
+            console.log(`✅ ${user.username}: ${result.releases.length} nouvelle(s) sortie(s)`);
+          }
+        } catch (error) {
+          console.error(`❌ Erreur sync pour ${user.username}:`, error);
+        }
+      }
+
+      console.log(`🎉 Synchronisation terminée : ${totalNewReleases} nouvelle(s) sortie(s) au total`);
+      
+    } catch (error) {
+      console.error('❌ Erreur lors de la synchronisation globale:', error);
+      throw error;
+    }
+  }
+
   async syncReleasesForUser(userId: string) {
     try {
       // Récupérer les artistes favoris de l'utilisateur
@@ -51,7 +97,7 @@ class ReleaseService {
               });
 
               if (!existingRelease) {
-                // 🆕 Chercher la sortie sur Deezer pour enrichir les données
+                // 🎵 Chercher la sortie sur Deezer pour enrichir les données
                 let deezerId: string | undefined;
                 let deezerUrl: string | undefined;
 
@@ -79,18 +125,34 @@ class ReleaseService {
                 const newRelease = await prisma.release.create({
                   data: {
                     spotifyId: release.id,
-                    deezerId: deezerId,        // 🆕 Ajout deezerId
+                    deezerId: deezerId,
                     name: release.name,
                     releaseType: this.mapAlbumType(release.album_type),
                     releaseDate: new Date(release.release_date),
                     imageUrl: release.images[0]?.url,
                     spotifyUrl: release.external_urls.spotify,
-                    deezerUrl: deezerUrl,      // 🆕 Ajout deezerUrl
+                    deezerUrl: deezerUrl,
                     trackCount: release.total_tracks,
                     artistId: artist.id,
                   },
                 });
+
                 newReleases.push(newRelease);
+
+                // 🆕 AJOUT : Envoyer une notification pour cette nouvelle sortie
+                // Uniquement si la date de sortie est récente (dans les 7 derniers jours)
+                const releaseDate = new Date(release.release_date);
+                const now = new Date();
+                const daysDiff = Math.floor((now.getTime() - releaseDate.getTime()) / (1000 * 60 * 60 * 24));
+                
+                // Si la sortie date de moins de 7 jours, envoyer une notification
+                if (daysDiff >= 0 && daysDiff <= 7) {
+                  try {
+                    await notificationService.sendNewReleaseNotifications(newRelease.id);
+                  } catch (notifError) {
+                    console.error('Erreur envoi notification:', notifError);
+                  }
+                }
               }
             }
           } catch (error) {
@@ -128,8 +190,7 @@ class ReleaseService {
 
       const data = await response.json();
       
-      // ✅ MODIFICATION : Inclure les sorties passées ET futures
-      // Sorties depuis 6 mois en arrière jusqu'à 6 mois dans le futur
+      // Inclure les sorties depuis 6 mois en arrière jusqu'à 6 mois dans le futur
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
       
@@ -138,7 +199,6 @@ class ReleaseService {
       
       return data.items.filter((album: SpotifyAlbum) => {
         const releaseDate = new Date(album.release_date);
-        // Inclure les sorties entre 6 mois avant et 6 mois après
         return releaseDate >= sixMonthsAgo && releaseDate <= sixMonthsAhead;
       });
     } catch (error) {
@@ -171,7 +231,9 @@ class ReleaseService {
             id: true,
             name: true,
             spotifyId: true,
-            deezerId: true,  // 🆕 Inclure deezerId
+            deezerId: true,
+            imageUrl: true,
+            genres: true,
           }
         }
       },
@@ -190,7 +252,7 @@ class ReleaseService {
     }
   }
 
-  // 🆕 Fonction helper pour normaliser les noms (pour le matching)
+  // Fonction helper pour normaliser les noms (pour le matching Deezer)
   private normalizeName(name: string): string {
     return name
       .toLowerCase()

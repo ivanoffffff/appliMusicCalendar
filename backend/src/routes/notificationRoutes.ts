@@ -21,4 +21,8 @@ router.get('/test-connection', notificationController.testEmailConnection);
 // Synchronisation manuelle (pour les admins/tests)
 router.post('/sync-releases', notificationController.triggerReleaseSync);
 
+// 🆕 NOUVELLES ROUTES - Récapitulatif hebdomadaire
+router.post('/weekly-summary/send', notificationController.sendManualWeeklySummary);
+router.put('/weekly-summary/preference', notificationController.updateWeeklySummaryPreference);
+
 export default router;

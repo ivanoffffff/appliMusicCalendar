@@ -14,6 +14,7 @@ class CronService {
 
     console.log('⏰ Initialisation du service de planification...');
 
+    // Synchronisation horaire des sorties
     this.scheduledTasks.push(
       cron.schedule('0 * * * *', async () => {
         console.log('🔄 Début de la synchronisation horaire des sorties...');
@@ -61,6 +62,22 @@ class CronService {
       })
     );
 
+    // 🆕 NOUVEAU : Récapitulatif hebdomadaire (vendredi à 10h00)
+    this.scheduledTasks.push(
+      cron.schedule('0 10 * * 5', async () => {
+        console.log('📧 Envoi des récapitulatifs hebdomadaires des sorties...');
+        try {
+          await notificationService.sendWeeklySummary();
+          console.log('✅ Récapitulatifs hebdomadaires envoyés');
+        } catch (error) {
+          console.error('❌ Erreur lors de l\'envoi des récapitulatifs:', error);
+        }
+      }, {
+        scheduled: true,
+        timezone: "Europe/Paris"
+      })
+    );
+
     // Nettoyage des logs anciens (tous les dimanches à 2h00)
     this.scheduledTasks.push(
       cron.schedule('0 2 * * 0', async () => {
@@ -71,15 +88,15 @@ class CronService {
         } catch (error) {
           console.error('❌ Erreur lors du nettoyage:', error);
         }
-    }, {
-      scheduled: true,
-      timezone: "Europe/Paris"
-    })
-  );
+      }, {
+        scheduled: true,
+        timezone: "Europe/Paris"
+      })
+    );
 
-  this.isInitialized = true;
-  console.log('✅ Service de planification initialisé avec succès');
-}
+    this.isInitialized = true;
+    console.log('✅ Service de planification initialisé avec succès');
+  }
 
   private async cleanupOldLogs(): Promise<void> {
     try {
@@ -109,7 +126,6 @@ class CronService {
   // Méthode pour déclencher manuellement les tâches (utile pour les tests)
   async triggerManualSync(): Promise<void> {
     console.log('🔄 Synchronisation manuelle déclenchée...');
-    // Ajoutez ici la logique de synchronisation manuelle si nécessaire
   }
 
   // Arrêter tous les crons
@@ -122,7 +138,3 @@ class CronService {
 }
 
 export default new CronService();
-
-function destroy() {
-    throw new Error('Function not implemented.');
-}

@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import artistRoutes from './routes/artists';
 import releaseRoutes from './routes/releases';
+import notificationRoutes from './routes/notificationRoutes';  // 🆕 AJOUT
+import cronService from './services/cronService';  // 🆕 AJOUT
 
 dotenv.config();
 
@@ -33,6 +35,9 @@ app.use('/api/artists', artistRoutes);
 // Routes pour les sorties musicales
 app.use('/api/releases', releaseRoutes);
 
+// 🆕 NOUVEAU : Routes pour les notifications
+app.use('/api/notifications', notificationRoutes);
+
 // Gestion des erreurs globales
 app.use((err: any, req: any, res: any, next: any) => {
   console.error(err.stack);
@@ -48,4 +53,8 @@ app.listen(PORT, () => {
   console.log(`   Auth: POST/GET /api/auth/*`);
   console.log(`   Artists: GET /api/artists/*`);
   console.log(`   Releases: GET/POST /api/releases/*`);
+  console.log(`   Notifications: GET/POST /api/notifications/*`);  // 🆕 AJOUT
+  
+  // 🆕 NOUVEAU : Initialiser le service cron pour les tâches planifiées
+  cronService.init();
 });

@@ -187,13 +187,13 @@ class NotificationService {
         type: log.type,
         status: log.status,
         sentAt: log.sentAt,
-        release: {
+        release: log.release ? {
           name: log.release.name,
           releaseType: log.release.releaseType,
           artist: {
             name: log.release.artist.name
           }
-        }
+        } : null
       }));
     } catch (error) {
       console.error('❌ Erreur lors de la récupération de l\'historique:', error);
@@ -256,6 +256,145 @@ class NotificationService {
     // Logique pour envoyer un email récapitulatif
     // À implémenter selon vos besoins
     console.log(`📧 Envoi du récapitulatif ${frequency} à ${user.email} pour ${releases.length} sortie(s)`);
+  }
+
+  /**
+   * 🆕 NOUVELLE MÉTHODE : Envoie un récapitulatif hebdomadaire à tous les utilisateurs
+   * Liste toutes les sorties de leurs artistes favoris de la semaine
+   */
+  async sendWeeklySummary(): Promise<void> {
+    try {
+      console.log('📊 Génération des récapitulatifs hebdomadaires...');
+
+      // Calculer les dates de début et fin de la semaine (lundi à dimanche)
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0 = dimanche, 1 = lundi, ..., 5 = vendredi
+      
+      // Calculer le lundi de cette semaine
+      const startOfWeek = new Date(now);
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      startOfWeek.setDate(now.getDate() - daysToMonday);
+      startOfWeek.setHours(0, 0, 0, 0);
+      
+      // Calculer le dimanche de cette semaine
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      console.log(`📅 Période : ${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}`);
+
+      // Récupérer tous les utilisateurs avec leurs préférences
+      const users = await prisma.user.findMany({
+        where: {
+          notificationPreferences: {
+            emailNotifications: true,
+            // weeklySummary: true  // Décommenter si vous avez ajouté ce champ
+          }
+        },
+        include: {
+          notificationPreferences: true,
+          favorites: {
+            include: {
+              artist: {
+                include: {
+                  releases: {
+                    where: {
+                      releaseDate: {
+                        gte: startOfWeek,
+                        lte: endOfWeek
+                      }
+                    },
+                    orderBy: {
+                      releaseDate: 'asc'
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      console.log(`👥 ${users.length} utilisateur(s) à traiter`);
+
+      let emailsSent = 0;
+      let usersWithReleases = 0;
+
+      // Pour chaque utilisateur
+      for (const user of users) {
+        // Collecter toutes les sorties de la semaine de ses artistes favoris
+        const weeklyReleases = user.favorites
+          .flatMap(favorite => 
+            favorite.artist.releases.map(release => ({
+              artistName: favorite.artist.name,
+              artistImage: favorite.artist.imageUrl,
+              releaseName: release.name,
+              releaseType: release.releaseType,
+              releaseDate: release.releaseDate,
+              imageUrl: release.imageUrl,
+              spotifyUrl: release.spotifyUrl,
+              trackCount: release.trackCount
+            }))
+          )
+          .sort((a, b) => a.releaseDate.getTime() - b.releaseDate.getTime());
+
+        // Ne rien envoyer si aucune sortie cette semaine
+        if (weeklyReleases.length === 0) {
+          console.log(`⏭️ Pas de sortie cette semaine pour ${user.email}`);
+          continue;
+        }
+
+        usersWithReleases++;
+
+        // Préparer les données pour l'email
+        const emailData = {
+          userEmail: user.email,
+          userName: user.firstName || user.username,
+          releases: weeklyReleases,
+          startDate: startOfWeek,
+          endDate: endOfWeek,
+          totalReleases: weeklyReleases.length
+        };
+
+        // Envoyer l'email récapitulatif
+        const sent = await emailService.sendWeeklySummaryEmail(emailData);
+
+        if (sent) {
+          emailsSent++;
+          console.log(`✅ Récapitulatif envoyé à ${user.email} (${weeklyReleases.length} sortie(s))`);
+          
+          // Logger l'envoi
+          await this.logWeeklySummary(user.id, weeklyReleases.length);
+        } else {
+          console.error(`❌ Échec de l'envoi à ${user.email}`);
+        }
+      }
+
+      console.log(`📧 Résumé : ${emailsSent}/${usersWithReleases} emails envoyés`);
+
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'envoi des récapitulatifs hebdomadaires:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Logger l'envoi d'un récapitulatif hebdomadaire
+   */
+  private async logWeeklySummary(userId: string, releaseCount: number): Promise<void> {
+    try {
+      await prisma.notificationLog.create({
+        data: {
+          userId,
+          type: 'weekly_summary',
+          status: 'sent',
+          sentAt: new Date(),
+          metadata: JSON.stringify({ releaseCount })
+        },
+      });
+    } catch (error) {
+      console.error('❌ Erreur lors du log du récapitulatif:', error);
+    }
   }
 }
 

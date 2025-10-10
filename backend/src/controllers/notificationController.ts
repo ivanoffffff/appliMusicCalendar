@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import notificationService from '../services/notificationService';
 import emailService from '../services/emailService';
+import prisma from '../config/database';
 
 class NotificationController {
   
@@ -165,10 +166,8 @@ class NotificationController {
     }
   }
 
-  // Endpoint pour déclencher manuellement la sync avec notifications
   async triggerReleaseSync(req: Request, res: Response) {
     try {
-      // Import dynamique pour éviter les dépendances circulaires
       const releaseService = (await import('../services/releaseService')).default;
       
       await releaseService.syncAllReleases();
@@ -182,6 +181,77 @@ class NotificationController {
       res.status(500).json({
         success: false,
         message: 'Erreur lors de la synchronisation',
+      });
+    }
+  }
+
+  /**
+   * 🆕 NOUVELLE MÉTHODE : Déclencher manuellement l'envoi du récapitulatif hebdomadaire
+   */
+  async sendManualWeeklySummary(req: Request, res: Response) {
+    try {
+      console.log('📧 Envoi manuel du récapitulatif hebdomadaire demandé...');
+      
+      await notificationService.sendWeeklySummary();
+
+      res.json({
+        success: true,
+        message: 'Récapitulatif hebdomadaire envoyé avec succès',
+      });
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'envoi manuel du récapitulatif:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de l\'envoi du récapitulatif hebdomadaire',
+        error: error instanceof Error ? error.message : 'Erreur inconnue'
+      });
+    }
+  }
+
+  /**
+   * 🆕 Mettre à jour les préférences de récapitulatif hebdomadaire
+   */
+  async updateWeeklySummaryPreference(req: Request, res: Response) {
+    try {
+      const userId = req.user!.userId;
+      const { weeklySummary } = req.body;
+
+      if (typeof weeklySummary !== 'boolean') {
+        return res.status(400).json({
+          success: false,
+          message: 'weeklySummary doit être un booléen',
+        });
+      }
+
+      // Mettre à jour ou créer les préférences
+      await prisma.notificationPreferences.upsert({
+        where: { userId },
+        update: {
+          weeklySummary,
+          updatedAt: new Date(),
+        },
+        create: {
+          userId,
+          weeklySummary,
+          emailNotifications: true,
+          notificationTypes: JSON.stringify({
+            newAlbum: true,
+            newSingle: true,
+            newCompilation: true,
+          }),
+          frequency: 'immediate',
+        },
+      });
+
+      res.json({
+        success: true,
+        message: `Récapitulatif hebdomadaire ${weeklySummary ? 'activé' : 'désactivé'}`,
+      });
+    } catch (error) {
+      console.error('Erreur mise à jour préférence récapitulatif:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la mise à jour de la préférence',
       });
     }
   }

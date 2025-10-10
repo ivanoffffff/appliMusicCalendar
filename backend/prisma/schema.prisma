@@ -18,8 +18,10 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  favorites     UserFavorite[]
-  spotifyToken  SpotifyToken?
+  favorites                UserFavorite[]
+  spotifyToken             SpotifyToken?
+  notificationPreferences  NotificationPreferences?
+  notificationLogs         NotificationLog[]
 
   @@map("users")
 }
@@ -32,10 +34,9 @@ model Artist {
   genres      String   // JSON string
   imageUrl    String?
   
-  // 🆕 NOUVEAUX CHAMPS pour le cache
   popularity  Int?     @default(0)
   followers   Int?     @default(0)
-  lastSyncAt  DateTime? // Date de dernière synchronisation
+  lastSyncAt  DateTime?
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -65,13 +66,13 @@ model UserFavorite {
 model Release {
   id          String      @id @default(cuid())
   spotifyId   String?     @unique
-  deezerId    String?     @unique  // 🆕 NOUVEAU
+  deezerId    String?     @unique
   name        String
   releaseType ReleaseType
   releaseDate DateTime
   imageUrl    String?
   spotifyUrl  String?
-  deezerUrl   String?     // 🆕 NOUVEAU
+  deezerUrl   String?
   trackCount  Int?
   duration    Int?
   isExplicit  Boolean     @default(false)
@@ -81,7 +82,8 @@ model Release {
   updatedAt   DateTime    @updatedAt
 
   // Relations
-  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artist            Artist            @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  notificationLogs  NotificationLog[]
 
   @@map("releases")
 }
@@ -100,6 +102,43 @@ model SpotifyToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("spotify_tokens")
+}
+
+// 🆕 NOUVEAU MODÈLE : Préférences de notification
+model NotificationPreferences {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailNotifications  Boolean  @default(true)
+  notificationTypes   String   @default("{\"newAlbum\":true,\"newSingle\":true,\"newCompilation\":true}")
+  frequency           String   @default("immediate") // immediate, daily, weekly
+  
+  // 🆕 Option pour activer/désactiver le récapitulatif hebdomadaire
+  weeklySummary       Boolean  @default(true)
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("notification_preferences")
+}
+
+// 🆕 NOUVEAU MODÈLE : Logs de notification
+model NotificationLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  releaseId   String?
+  release     Release? @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  type        String   // email, push, weekly_summary, etc.
+  status      String   // sent, failed, pending
+  sentAt      DateTime @default(now())
+  
+  // 🆕 Métadonnées pour stocker des infos supplémentaires (ex: nombre de sorties)
+  metadata    String?  @default("{}")
+
+  @@index([userId])
+  @@index([sentAt])
+  @@map("notification_logs")
 }
 
 enum ReleaseType {
