@@ -43,8 +43,17 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release }) => {
     }
   };
 
+  // ✨ Nouvelles fonctions pour les sorties futures
+  const releaseDate = new Date(release.releaseDate);
+  const now = new Date();
+  const isNew = releaseDate > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && releaseDate <= now;
+  const isUpcoming = releaseDate > now;
+
+  // Calculer le nombre de jours avant/après la sortie
+  const daysDiff = Math.ceil((releaseDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
   return (
-    <div className="group music-card card-hover animate-entrance">
+    <div className="group music-card card-hover animate-entrance relative">
       <div className="flex items-start space-x-4">
         {/* Image de la sortie */}
         <div className="flex-shrink-0 relative">
@@ -69,6 +78,18 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release }) => {
               </div>
             )}
           </div>
+
+          {/* ✨ Badge "Nouveau" ou "À venir" */}
+          {isNew && (
+            <div className="absolute -top-2 -right-2 px-2 py-1 bg-gradient-to-r from-green-400 to-green-500 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
+              NEW
+            </div>
+          )}
+          {isUpcoming && (
+            <div className="absolute -top-2 -right-2 px-2 py-1 bg-gradient-to-r from-orange-400 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg">
+              {daysDiff <= 7 ? `J-${daysDiff}` : 'BIENTÔT'}
+            </div>
+          )}
         </div>
 
         {/* Informations de la sortie */}
@@ -84,9 +105,16 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release }) => {
               <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getReleaseTypeColor(release.releaseType)}`}>
                 {getReleaseTypeLabel(release.releaseType)}
               </span>
-              <span className="text-xs text-secondary flex items-center space-x-1">
-                <span>📅</span>
-                <span>{formatDate(release.releaseDate)}</span>
+              <span className={`text-xs flex items-center space-x-1 ${isUpcoming ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-secondary'}`}>
+                <span>{isUpcoming ? '🗓️' : '📅'}</span>
+                <span>
+                  {formatDate(release.releaseDate)}
+                  {isUpcoming && daysDiff <= 30 && (
+                    <span className="ml-1">
+                      ({daysDiff} jour{daysDiff > 1 ? 's' : ''})
+                    </span>
+                  )}
+                </span>
               </span>
             </div>
 
@@ -108,25 +136,33 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release }) => {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-spotify text-sm px-4 py-2 flex items-center space-x-2 hover:shadow-spotify"
-                  title="Écouter sur Spotify"
+                  title={isUpcoming ? "Pré-enregistrer sur Spotify" : "Écouter sur Spotify"}
                 >
                   <span>🎵</span>
-                  <span>Spotify</span>
+                  <span>{isUpcoming ? 'Pré-enregistrer' : 'Spotify'}</span>
                 </a>
               )}
 
-              {/* 🆕 Lien Deezer */}
+              {/* Lien Deezer */}
               {release.deezerUrl && (
                 <a
                   href={release.deezerUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-gradient-to-r from-orange-500 to-pink-500 text-white text-sm px-4 py-2 rounded-xl flex items-center space-x-2 hover:shadow-lg hover:scale-105 transition-all duration-300 font-medium"
-                  title="Écouter sur Deezer"
+                  title={isUpcoming ? "Pré-enregistrer sur Deezer" : "Écouter sur Deezer"}
                 >
                   <span>🎧</span>
                   <span>Deezer</span>
                 </a>
+              )}
+
+              {/* ✨ Indicateur "Sortie prévue" */}
+              {isUpcoming && (
+                <div className="flex items-center text-xs text-orange-600 dark:text-orange-400 font-medium ml-2">
+                  <span className="mr-1">⏰</span>
+                  <span>Sortie prévue</span>
+                </div>
               )}
             </div>
           </div>

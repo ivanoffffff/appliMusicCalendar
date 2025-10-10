@@ -15,6 +15,7 @@ const ReleasesPage: React.FC = () => {
   const [error, setError] = useState('');
   const [selectedRelease, setSelectedRelease] = useState<Release | null>(null);
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
+  const [filter, setFilter] = useState<'all' | 'past' | 'upcoming'>('all');
 
   useEffect(() => {
     loadReleases();
@@ -25,10 +26,11 @@ const ReleasesPage: React.FC = () => {
       setIsLoading(true);
       setError('');
       
+      // ✅ Charger les sorties des 6 derniers mois jusqu'aux 6 prochains mois
       const startDate = new Date();
       startDate.setMonth(startDate.getMonth() - 6);
       const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + 3);
+      endDate.setMonth(endDate.getMonth() + 6);
 
       const response = await releaseService.getUserReleases(
         startDate.toISOString(),
@@ -103,6 +105,23 @@ const ReleasesPage: React.FC = () => {
     setSelectedRelease(release);
   };
 
+  // ✨ Fonction de filtrage
+  const getFilteredReleases = () => {
+    const now = new Date();
+    
+    switch (filter) {
+      case 'past':
+        return releases.filter(r => new Date(r.releaseDate) <= now);
+      case 'upcoming':
+        return releases.filter(r => new Date(r.releaseDate) > now);
+      default:
+        return releases;
+    }
+  };
+
+  const filteredReleases = getFilteredReleases();
+  const upcomingCount = releases.filter(r => new Date(r.releaseDate) > new Date()).length;
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-primary">
@@ -124,8 +143,8 @@ const ReleasesPage: React.FC = () => {
       {/* Controls */}
       <div className="bg-secondary/80 backdrop-blur-md border-b border-custom">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setView('calendar')}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 ${
@@ -147,6 +166,42 @@ const ReleasesPage: React.FC = () => {
                 📋 Vue liste
               </button>
             </div>
+
+            {/* ✨ Filtres pour la vue liste */}
+            {view === 'list' && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setFilter('all')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ${
+                    filter === 'all'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  Tout
+                </button>
+                <button
+                  onClick={() => setFilter('upcoming')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ${
+                    filter === 'upcoming'
+                      ? 'bg-orange-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  🗓️ À venir ({upcomingCount})
+                </button>
+                <button
+                  onClick={() => setFilter('past')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ${
+                    filter === 'past'
+                      ? 'bg-gray-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  📅 Sorties
+                </button>
+              </div>
+            )}
             
             <button
               onClick={syncReleases}
@@ -222,15 +277,29 @@ const ReleasesPage: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-primary">
-                  Toutes les sorties ({releases.length})
-                </h2>
-                {releases.map(release => (
-                  <ReleaseCard
-                    key={release.id}
-                    release={release}
-                  />
-                ))}
+                {filteredReleases.length === 0 ? (
+                  <div className="text-center py-12 music-card">
+                    <p className="text-secondary">
+                      {filter === 'upcoming' 
+                        ? "Aucune sortie à venir pour le moment 📅"
+                        : "Aucune sortie correspondante"}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="text-lg font-semibold text-primary">
+                      {filter === 'all' && `Toutes les sorties (${filteredReleases.length})`}
+                      {filter === 'upcoming' && `Sorties à venir (${filteredReleases.length})`}
+                      {filter === 'past' && `Sorties disponibles (${filteredReleases.length})`}
+                    </h2>
+                    {filteredReleases.map(release => (
+                      <ReleaseCard
+                        key={release.id}
+                        release={release}
+                      />
+                    ))}
+                  </>
+                )}
               </div>
             )}
           </div>

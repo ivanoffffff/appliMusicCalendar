@@ -114,7 +114,7 @@ class ReleaseService {
       const accessToken = await (spotifyService as any).getAccessToken();
       
       const response = await fetch(
-        `https://api.spotify.com/v1/artists/${spotifyArtistId}/albums?include_groups=album,single&market=FR&limit=20`,
+        `https://api.spotify.com/v1/artists/${spotifyArtistId}/albums?include_groups=album,single&market=FR&limit=50`,
         {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -128,13 +128,18 @@ class ReleaseService {
 
       const data = await response.json();
       
-      // Filtrer les sorties récentes (derniers 6 mois)
+      // ✅ MODIFICATION : Inclure les sorties passées ET futures
+      // Sorties depuis 6 mois en arrière jusqu'à 6 mois dans le futur
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
       
+      const sixMonthsAhead = new Date();
+      sixMonthsAhead.setMonth(sixMonthsAhead.getMonth() + 6);
+      
       return data.items.filter((album: SpotifyAlbum) => {
         const releaseDate = new Date(album.release_date);
-        return releaseDate >= sixMonthsAgo;
+        // Inclure les sorties entre 6 mois avant et 6 mois après
+        return releaseDate >= sixMonthsAgo && releaseDate <= sixMonthsAhead;
       });
     } catch (error) {
       console.error('Erreur récupération albums artiste:', error);
