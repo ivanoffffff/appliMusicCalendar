@@ -47,18 +47,26 @@ class EmailService {
   }
 
   private initializeTransporter() {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.resend.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: 'resend',
-        pass: process.env.RESEND_API_KEY,
-      },
-    });
+  const config: EmailConfig = {
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.SMTP_USER || '',
+      pass: process.env.RESEND_API_KEY || process.env.SMTP_PASS || '',
+    },
+  };
 
-    this.transporter = transporter;
-  }
+  console.log('📧 Configuration SMTP:', {
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    user: config.auth.user,
+    hasPassword: !!config.auth.pass
+  });
+
+  this.transporter = nodemailer.createTransport(config);
+}
 
   async sendNewReleaseNotification(data: NotificationData): Promise<boolean> {
     try {
