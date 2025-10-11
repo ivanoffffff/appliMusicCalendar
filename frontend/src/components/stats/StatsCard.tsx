@@ -27,7 +27,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
       
       <div className="relative">
         {/* Icon */}
-        <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
+        <div className="text-4xl mb-3 group-hover:scale-105 transition-transform duration-300">
           {icon}
         </div>
         
