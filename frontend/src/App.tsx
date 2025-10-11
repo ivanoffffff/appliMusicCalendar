@@ -7,6 +7,7 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ArtistsPage from './pages/ArtistsPage';
 import ReleasesPage from './pages/ReleasesPage';
+import NotificationSettingsPage from './pages/NotificationSettingsPage'; // 🆕 NOUVEAU
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 // Composant pour protéger les routes privées
@@ -82,6 +83,15 @@ function AppContent() {
         element={
           <PrivateRoute>
             <ReleasesPage />
+          </PrivateRoute>
+        } 
+      />
+      {/* 🆕 NOUVELLE ROUTE - Paramètres de notification */}
+      <Route 
+        path="/settings/notifications" 
+        element={
+          <PrivateRoute>
+            <NotificationSettingsPage />
           </PrivateRoute>
         } 
       />

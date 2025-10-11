@@ -23,59 +23,72 @@ class AuthService {
   private readonly JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
 
   async register(data: RegisterData) {
-    // Valider les données
-    const validatedData = registerSchema.parse(data);
+  // Valider les données
+  const validatedData = registerSchema.parse(data);
 
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: validatedData.email },
-          { username: validatedData.username }
-        ]
-      }
-    });
-
-    if (existingUser) {
-      if (existingUser.email === validatedData.email) {
-        throw new Error('Cet email est déjà utilisé');
-      }
-      if (existingUser.username === validatedData.username) {
-        throw new Error('Ce nom d\'utilisateur est déjà pris');
-      }
+  // Vérifier si l'utilisateur existe déjà
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: validatedData.email },
+        { username: validatedData.username }
+      ]
     }
+  });
 
-    // Hasher le mot de passe
-    const hashedPassword = await bcrypt.hash(validatedData.password, 12);
-
-    // Créer l'utilisateur
-    const user = await prisma.user.create({
-      data: {
-        email: validatedData.email,
-        username: validatedData.username,
-        password: hashedPassword,
-        firstName: validatedData.firstName,
-        lastName: validatedData.lastName,
-      },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        firstName: true,
-        lastName: true,
-        createdAt: true,
-      }
-    });
-
-    // Générer le token
-    const accessToken = this.generateAccessToken({
-      userId: user.id,
-      email: user.email,
-      username: user.username,
-    });
-
-    return { user, accessToken };
+  if (existingUser) {
+    if (existingUser.email === validatedData.email) {
+      throw new Error('Cet email est déjà utilisé');
+    }
+    if (existingUser.username === validatedData.username) {
+      throw new Error('Ce nom d\'utilisateur est déjà pris');
+    }
   }
+
+  // Hasher le mot de passe
+  const hashedPassword = await bcrypt.hash(validatedData.password, 12);
+
+  // Créer l'utilisateur ET ses préférences de notification en une seule transaction
+  const user = await prisma.user.create({
+    data: {
+      email: validatedData.email,
+      username: validatedData.username,
+      password: hashedPassword,
+      firstName: validatedData.firstName,
+      lastName: validatedData.lastName,
+      // 🆕 NOUVEAU : Créer automatiquement les préférences de notification
+      notificationPreferences: {
+        create: {
+          emailNotifications: true,
+          notificationTypes: JSON.stringify({
+            newAlbum: true,
+            newSingle: true,
+            newCompilation: true,
+          }),
+          frequency: 'immediate',
+          weeklySummary: true,  // 🆕 Activer le récapitulatif par défaut
+        }
+      }
+    },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      firstName: true,
+      lastName: true,
+      createdAt: true,
+    }
+  });
+
+  // Générer le token
+  const accessToken = this.generateAccessToken({
+    userId: user.id,
+    email: user.email,
+    username: user.username,
+  });
+
+  return { user, accessToken };
+}
 
   async login(data: LoginData) {
     // Valider les données

@@ -100,4 +100,32 @@ export const releaseService = {
   },
 };
 
+// 🆕 NOUVEAU : Services de notification
+export const notificationService = {
+  async getPreferences(): Promise<ApiResponse<any>> {
+    const response = await api.get('/notifications/preferences');
+    return response.data;
+  },
+
+  async updatePreferences(preferences: any): Promise<ApiResponse<any>> {
+    const response = await api.put('/notifications/preferences', preferences);
+    return response.data;
+  },
+
+  async getHistory(limit: number = 50): Promise<ApiResponse<any[]>> {
+    const response = await api.get(`/notifications/history?limit=${limit}`);
+    return response.data;
+  },
+
+  async testConnection(): Promise<ApiResponse<any>> {
+    const response = await api.get('/notifications/test-connection');
+    return response.data;
+  },
+
+  async sendWeeklySummary(): Promise<ApiResponse<any>> {
+    const response = await api.post('/notifications/weekly-summary/send');
+    return response.data;
+  },
+};
+
 export default api;

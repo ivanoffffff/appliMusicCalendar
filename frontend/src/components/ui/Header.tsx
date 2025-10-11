@@ -40,7 +40,7 @@ const Header: React.FC = () => {
               </h1>
             </div>
 
-            {/* Navigation */}
+            {/* Navigation Desktop */}
             <nav className="hidden md:flex space-x-6">
               <button
                 onClick={() => navigate('/dashboard')}
@@ -71,6 +71,17 @@ const Header: React.FC = () => {
                 }`}
               >
                 Calendrier
+              </button>
+              {/* 🆕 NOUVEAU BOUTON - Notifications */}
+              <button
+                onClick={() => navigate('/settings/notifications')}
+                className={`px-3 py-2 rounded-lg font-medium transition-all duration-300 ${
+                  isActive('/settings/notifications')
+                    ? 'bg-primary-500 text-white shadow-glow'
+                    : 'text-secondary hover:text-primary hover:bg-primary/10'
+                }`}
+              >
+                🔔 Notifications
               </button>
             </nav>
           </div>
@@ -114,10 +125,10 @@ const Header: React.FC = () => {
         </div>
 
         {/* Navigation mobile */}
-        <nav className="md:hidden mt-4 flex space-x-2">
+        <nav className="md:hidden mt-4 grid grid-cols-2 gap-2">
           <button
             onClick={() => navigate('/dashboard')}
-            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+            className={`py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
               isActive('/dashboard')
                 ? 'bg-primary-500 text-white'
                 : 'text-secondary hover:text-primary hover:bg-primary/10'
@@ -127,7 +138,7 @@ const Header: React.FC = () => {
           </button>
           <button
             onClick={() => navigate('/artists')}
-            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+            className={`py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
               isActive('/artists')
                 ? 'bg-primary-500 text-white'
                 : 'text-secondary hover:text-primary hover:bg-primary/10'
@@ -137,13 +148,24 @@ const Header: React.FC = () => {
           </button>
           <button
             onClick={() => navigate('/releases')}
-            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+            className={`py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
               isActive('/releases')
                 ? 'bg-primary-500 text-white'
                 : 'text-secondary hover:text-primary hover:bg-primary/10'
             }`}
           >
             Calendrier
+          </button>
+          {/* 🆕 NOUVEAU BOUTON - Notifications Mobile */}
+          <button
+            onClick={() => navigate('/settings/notifications')}
+            className={`py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+              isActive('/settings/notifications')
+                ? 'bg-primary-500 text-white'
+                : 'text-secondary hover:text-primary hover:bg-primary/10'
+            }`}
+          >
+            🔔 Notifs
           </button>
         </nav>
       </div>
