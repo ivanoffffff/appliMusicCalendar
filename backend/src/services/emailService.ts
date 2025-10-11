@@ -1,14 +1,4 @@
-import nodemailer from 'nodemailer';
-
-interface EmailConfig {
-  host: string;
-  port: number;
-  secure: boolean;
-  auth: {
-    user: string;
-    pass: string;
-  };
-}
+import axios from 'axios';
 
 interface NotificationData {
   userEmail: string;
@@ -40,53 +30,53 @@ interface WeeklySummaryData {
 }
 
 class EmailService {
-  private transporter: nodemailer.Transporter | undefined;
+  private resendApiKey: string;
+  private fromEmail: string;
 
   constructor() {
-    this.initializeTransporter();
+    this.resendApiKey = process.env.RESEND_API_KEY || '';
+    this.fromEmail = process.env.SMTP_FROM_EMAIL || 'onboarding@resend.dev';
+    
+    if (!this.resendApiKey) {
+      console.warn('⚠️ RESEND_API_KEY non configurée, les emails ne seront pas envoyés');
+    } else {
+      console.log('✅ Service email Resend initialisé');
+    }
   }
-
-  private initializeTransporter() {
-  const config: EmailConfig = {
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-      user: process.env.SMTP_USER || '',
-      pass: process.env.RESEND_API_KEY || process.env.SMTP_PASS || '',
-    },
-  };
-
-  console.log('📧 Configuration SMTP:', {
-    host: config.host,
-    port: config.port,
-    secure: config.secure,
-    user: config.auth.user,
-    hasPassword: !!config.auth.pass
-  });
-
-  this.transporter = nodemailer.createTransport(config);
-}
 
   async sendNewReleaseNotification(data: NotificationData): Promise<boolean> {
     try {
+      if (!this.resendApiKey) {
+        console.error('❌ RESEND_API_KEY manquante');
+        return false;
+      }
+
       const htmlContent = this.generateReleaseEmailTemplate(data);
       
-      const mailOptions = {
-        from: `"Music Tracker" <${process.env.SMTP_USER}>`,
-        to: data.userEmail,
-        subject: `🎵 Nouvelle sortie de ${data.artistName} !`,
-        html: htmlContent,
-      };
+      const response = await axios.post(
+        'https://api.resend.com/emails',
+        {
+          from: `Music Tracker <${this.fromEmail}>`,
+          to: [data.userEmail],
+          subject: `🎵 Nouvelle sortie de ${data.artistName} !`,
+          html: htmlContent,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-      if (!this.transporter) {
-        throw new Error('Transporter is not initialized');
-      }
-      const result = await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Email envoyé avec succès à ${data.userEmail}:`, result.messageId);
+      console.log(`✅ Email envoyé avec succès à ${data.userEmail}:`, response.data.id);
       return true;
     } catch (error) {
-      console.error('❌ Erreur lors de l\'envoi de l\'email:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Erreur Resend API:', error.response?.data || error.message);
+      } else {
+        console.error('❌ Erreur lors de l\'envoi de l\'email:', error);
+      }
       return false;
     }
   }
@@ -106,22 +96,112 @@ class EmailService {
       <head>
         <meta charset="UTF-8">
         <style>
-          body { font-family: Arial, sans-serif; background-color: #f4f4f4; }
-          .container { max-width: 600px; margin: 0 auto; background-color: #fff; padding: 20px; }
+          body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 20px auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+          h2 { color: #1DB954; margin-bottom: 20px; }
+          .release-image { max-width: 300px; border-radius: 8px; margin: 20px 0; }
+          .info { margin: 15px 0; color: #333; }
+          .spotify-btn { display: inline-block; background-color: #1DB954; color: white; padding: 12px 24px; text-decoration: none; border-radius: 25px; margin-top: 20px; font-weight: bold; }
+          .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
         </style>
       </head>
       <body>
         <div class="container">
           <h2>${emoji} Nouvelle sortie de ${data.artistName} !</h2>
-          ${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.releaseName}" style="max-width: 300px;">` : ''}
-          <h3>${data.releaseName}</h3>
-          <p>Type: ${data.releaseType}</p>
-          <p>Date de sortie: ${data.releaseDate.toLocaleDateString()}</p>
-          <a href="${data.spotifyUrl}" style="background-color: #1DB954; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Écouter sur Spotify</a>
-          <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
-            <p style="font-size: 12px; color: #666;">
-              <a href="#" style="color: #667eea;">Se désabonner</a>
-            </p>
+          <p>Bonjour ${data.userName},</p>
+          <p>Bonne nouvelle ! ${data.artistName} vient de sortir un nouveau ${data.releaseType} :</p>
+          ${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.releaseName}" class="release-image">` : ''}
+          <div class="info">
+            <strong>Titre :</strong> ${data.releaseName}<br>
+            <strong>Type :</strong> ${data.releaseType}<br>
+            <strong>Date de sortie :</strong> ${data.releaseDate.toLocaleDateString('fr-FR')}
+          </div>
+          <a href="${data.spotifyUrl}" class="spotify-btn">🎧 Écouter sur Spotify</a>
+          <div class="footer">
+            <p>Vous recevez cet email car vous suivez ${data.artistName} sur Music Tracker.</p>
+            <p>© ${new Date().getFullYear()} Music Tracker</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  async sendWeeklySummaryEmail(data: WeeklySummaryData): Promise<boolean> {
+    try {
+      if (!this.resendApiKey) {
+        console.error('❌ RESEND_API_KEY manquante');
+        return false;
+      }
+
+      const htmlContent = this.generateWeeklySummaryTemplate(data);
+      
+      const response = await axios.post(
+        'https://api.resend.com/emails',
+        {
+          from: `Music Tracker <${this.fromEmail}>`,
+          to: [data.userEmail],
+          subject: `🎵 Récapitulatif : ${data.totalReleases} nouvelle${data.totalReleases > 1 ? 's' : ''} sortie${data.totalReleases > 1 ? 's' : ''} cette semaine !`,
+          html: htmlContent,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      console.log(`✅ Récapitulatif envoyé à ${data.userEmail} (ID: ${response.data.id})`);
+      return true;
+
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Erreur Resend API:', error.response?.data || error.message);
+      } else {
+        console.error('❌ Erreur lors de l\'envoi du récapitulatif:', error);
+      }
+      return false;
+    }
+  }
+
+  private generateWeeklySummaryTemplate(data: WeeklySummaryData): string {
+    const releasesHtml = data.releases.map(release => {
+      const emoji = release.releaseType === 'album' ? '💿' : release.releaseType === 'single' ? '🎵' : '📀';
+      return `
+        <div style="padding: 15px; border-bottom: 1px solid #f3f4f6; margin-bottom: 15px;">
+          ${release.imageUrl ? `<img src="${release.imageUrl}" style="width: 80px; height: 80px; border-radius: 4px; float: left; margin-right: 15px;">` : ''}
+          <div>
+            <strong>${emoji} ${release.releaseName}</strong><br>
+            <span style="color: #666;">${release.artistName}</span><br>
+            <span style="font-size: 12px; color: #999;">${new Date(release.releaseDate).toLocaleDateString('fr-FR')}</span><br>
+            ${release.spotifyUrl ? `<a href="${release.spotifyUrl}" style="color: #1DB954; font-size: 12px;">Écouter sur Spotify</a>` : ''}
+          </div>
+          <div style="clear: both;"></div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 20px auto; background-color: #fff; padding: 30px; border-radius: 8px; }
+          h2 { color: #1DB954; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h2>🎵 Votre récapitulatif musical hebdomadaire</h2>
+          <p>Bonjour ${data.userName},</p>
+          <p>Voici les ${data.totalReleases} nouvelle${data.totalReleases > 1 ? 's' : ''} sortie${data.totalReleases > 1 ? 's' : ''} de vos artistes favoris cette semaine :</p>
+          ${releasesHtml}
+          <p style="margin-top: 30px;">Bonne écoute ! 🎧</p>
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666;">
+            <p>© ${new Date().getFullYear()} Music Tracker</p>
           </div>
         </div>
       </body>
@@ -131,227 +211,26 @@ class EmailService {
 
   async testConnection(): Promise<boolean> {
     try {
-      if (!this.transporter) {
-        throw new Error('Transporter is not initialized');
-      }
-      await this.transporter.verify();
-      console.log('✅ Connexion SMTP vérifiée avec succès');
-      return true;
-    } catch (error) {
-      console.error('❌ Erreur de connexion SMTP:', error);
-      return false;
-    }
-  }
-
-  // 🆕 À AJOUTER dans la classe EmailService (avant le export default)
-
-  /**
-   * 🆕 NOUVELLE MÉTHODE : Envoie un récapitulatif hebdomadaire
-   */
-  async sendWeeklySummaryEmail(data: WeeklySummaryData): Promise<boolean> {
-    try {
-      const formatDate = (date: Date) => {
-        return date.toLocaleDateString('fr-FR', { 
-          weekday: 'long', 
-          day: 'numeric', 
-          month: 'long' 
-        });
-      };
-
-      const getReleaseTypeLabel = (type: string): string => {
-        const labels: { [key: string]: string } = {
-          'album': '💿 Album',
-          'single': '🎵 Single',
-          'ep': '🎶 EP',
-          'compilation': '📀 Compilation'
-        };
-        return labels[type.toLowerCase()] || '🎵 Sortie';
-      };
-
-      const getReleaseTypeBadge = (type: string): string => {
-        const badges: { [key: string]: string } = {
-          'album': '#8B5CF6',
-          'single': '#EC4899',
-          'ep': '#10B981',
-          'compilation': '#F59E0B'
-        };
-        return badges[type.toLowerCase()] || '#6B7280';
-      };
-
-      // Construction du HTML pour chaque sortie
-      const releasesHtml = data.releases.map(release => `
-        <tr>
-          <td style="padding: 20px; border-bottom: 1px solid #f3f4f6;">
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td width="80" valign="top">
-                  ${release.imageUrl ? `
-                    <img src="${release.imageUrl}" alt="${release.releaseName}" 
-                         style="width: 80px; height: 80px; border-radius: 8px; display: block;">
-                  ` : `
-                    <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                                border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
-                      🎵
-                    </div>
-                  `}
-                </td>
-                <td style="padding-left: 16px;">
-                  <div style="font-size: 18px; font-weight: 600; color: #111827; margin-bottom: 4px;">
-                    ${release.releaseName}
-                  </div>
-                  <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">
-                    par ${release.artistName}
-                  </div>
-                  <div style="display: inline-block;">
-                    <span style="background-color: ${getReleaseTypeBadge(release.releaseType)}; 
-                                 color: white; padding: 4px 12px; border-radius: 12px; 
-                                 font-size: 12px; font-weight: 500; display: inline-block;">
-                      ${getReleaseTypeLabel(release.releaseType)}
-                    </span>
-                    <span style="color: #9ca3af; font-size: 12px; margin-left: 12px;">
-                      📅 ${formatDate(release.releaseDate)}
-                    </span>
-                    ${release.trackCount ? `
-                      <span style="color: #9ca3af; font-size: 12px; margin-left: 12px;">
-                        🎼 ${release.trackCount} titre${release.trackCount > 1 ? 's' : ''}
-                      </span>
-                    ` : ''}
-                  </div>
-                  ${release.spotifyUrl ? `
-                    <div style="margin-top: 12px;">
-                      <a href="${release.spotifyUrl}" 
-                         style="display: inline-block; background-color: #1DB954; color: white; 
-                                padding: 8px 16px; border-radius: 20px; text-decoration: none; 
-                                font-size: 13px; font-weight: 500;">
-                        🎧 Écouter sur Spotify
-                      </a>
-                    </div>
-                  ` : ''}
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      `).join('');
-
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html lang="fr">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Récapitulatif hebdomadaire - Music Tracker</title>
-        </head>
-        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 20px;">
-            <tr>
-              <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
-                  
-                  <!-- Header -->
-                  <tr>
-                    <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
-                      <div style="font-size: 32px; margin-bottom: 8px;">🎵</div>
-                      <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
-                        Récapitulatif de la semaine
-                      </h1>
-                      <p style="margin: 12px 0 0 0; color: #e0e7ff; font-size: 16px;">
-                        ${formatDate(data.startDate)} - ${formatDate(data.endDate)}
-                      </p>
-                    </td>
-                  </tr>
-
-                  <!-- Greeting -->
-                  <tr>
-                    <td style="padding: 30px 30px 20px 30px;">
-                      <p style="margin: 0; font-size: 16px; color: #374151; line-height: 1.6;">
-                        Bonjour <strong>${data.userName}</strong> ! 👋
-                      </p>
-                      <p style="margin: 16px 0 0 0; font-size: 16px; color: #374151; line-height: 1.6;">
-                        Voici un récapitulatif de <strong style="color: #8B5CF6;">${data.totalReleases} sortie${data.totalReleases > 1 ? 's' : ''}</strong> 
-                        de vos artistes favoris cette semaine :
-                      </p>
-                    </td>
-                  </tr>
-
-                  <!-- Releases List -->
-                  <tr>
-                    <td>
-                      <table width="100%" cellpadding="0" cellspacing="0">
-                        ${releasesHtml}
-                      </table>
-                    </td>
-                  </tr>
-
-                  <!-- Footer -->
-                  <tr>
-                    <td style="padding: 30px; text-align: center; background-color: #f9fafb; border-top: 1px solid #e5e7eb;">
-                      <p style="margin: 0 0 12px 0; font-size: 14px; color: #6b7280;">
-                        Profitez de votre écoute ! 🎧
-                      </p>
-                      <p style="margin: 0; font-size: 12px; color: #9ca3af;">
-                        Vous recevez cet email car vous êtes inscrit(e) à Music Tracker.<br>
-                        Pour gérer vos préférences de notification, connectez-vous à votre compte.
-                      </p>
-                    </td>
-                  </tr>
-
-                </table>
-
-                <!-- Bottom spacing -->
-                <div style="height: 40px;"></div>
-                
-                <!-- Footer text -->
-                <p style="text-align: center; font-size: 12px; color: #9ca3af; margin: 0;">
-                  © ${new Date().getFullYear()} Music Tracker - Tous droits réservés
-                </p>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
-      `;
-
-      const textContent = `
-Récapitulatif hebdomadaire - Music Tracker
-
-Bonjour ${data.userName} !
-
-Voici un récapitulatif de ${data.totalReleases} sortie(s) de vos artistes favoris cette semaine 
-(${formatDate(data.startDate)} - ${formatDate(data.endDate)}) :
-
-${data.releases.map((release, index) => `
-${index + 1}. ${release.releaseName}
-   Par : ${release.artistName}
-   Type : ${getReleaseTypeLabel(release.releaseType)}
-   Date : ${formatDate(release.releaseDate)}
-   ${release.spotifyUrl ? `Lien Spotify : ${release.spotifyUrl}` : ''}
-`).join('\n')}
-
-Profitez de votre écoute ! 🎧
-
----
-Music Tracker © ${new Date().getFullYear()}
-      `.trim();
-
-      const mailOptions = {
-        from: `"Music Tracker" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
-        to: data.userEmail,
-        subject: `🎵 Récapitulatif : ${data.totalReleases} nouvelle${data.totalReleases > 1 ? 's' : ''} sortie${data.totalReleases > 1 ? 's' : ''} cette semaine !`,
-        text: textContent,
-        html: htmlContent,
-      };
-
-      if (!this.transporter) {
-        throw new Error('Transporter is not initialized');
+      if (!this.resendApiKey) {
+        console.error('❌ RESEND_API_KEY non configurée');
+        return false;
       }
 
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Récapitulatif envoyé à ${data.userEmail} (ID: ${info.messageId})`);
-      return true;
+      // Test simple avec l'API Resend
+      const response = await axios.get('https://api.resend.com/emails', {
+        headers: {
+          'Authorization': `Bearer ${this.resendApiKey}`,
+        },
+      });
 
+      console.log('✅ Connexion Resend API vérifiée avec succès');
+      return true;
     } catch (error) {
-      console.error('❌ Erreur lors de l\'envoi du récapitulatif:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Erreur Resend API:', error.response?.data || error.message);
+      } else {
+        console.error('❌ Erreur de connexion Resend:', error);
+      }
       return false;
     }
   }
