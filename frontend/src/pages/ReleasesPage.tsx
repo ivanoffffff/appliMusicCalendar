@@ -78,6 +78,7 @@ const ReleasesPage: React.FC = () => {
       id: release.id,
       title: `${release.artist.name} - ${release.name}`,
       date: release.releaseDate,
+      allDay: true,
       backgroundColor: getReleaseTypeColor(release.releaseType).bg,
       borderColor: getReleaseTypeColor(release.releaseType).border,
       extendedProps: {

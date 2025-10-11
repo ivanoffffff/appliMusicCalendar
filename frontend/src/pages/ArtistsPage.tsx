@@ -87,7 +87,7 @@ const ArtistsPage: React.FC = () => {
       <Header />
 
       {/* Tabs avec glassmorphism */}
-      <div className="sticky top-[89px] z-40 bg-secondary/80 backdrop-blur-md border-b border-custom">
+      <div className="sticky top-[72px] z-40 bg-secondary/80 backdrop-blur-md border-b border-custom">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex space-x-8">
             <button
