@@ -176,7 +176,7 @@ class ReleaseService {
       const accessToken = await (spotifyService as any).getAccessToken();
       
       const response = await fetch(
-        `https://api.spotify.com/v1/artists/${spotifyArtistId}/albums?include_groups=album,single&market=FR&limit=50`,
+        `https://api.spotify.com/v1/artists/${spotifyArtistId}/albums?include_groups=album,single,compilation&limit=50`,
         {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
