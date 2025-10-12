@@ -102,16 +102,6 @@ const Header: React.FC = () => {
         {/* Navigation mobile */}
         <nav className="md:hidden mt-4 grid grid-cols-2 gap-2">
           <button
-            onClick={() => navigate('/dashboard')}
-            className={`py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-              isActive('/dashboard')
-                ? 'bg-primary-500 text-white'
-                : 'text-secondary hover:text-primary hover:bg-primary/10'
-            }`}
-          >
-            Dashboard
-          </button>
-          <button
             onClick={() => navigate('/artists')}
             className={`py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
               isActive('/artists')
@@ -130,17 +120,6 @@ const Header: React.FC = () => {
             }`}
           >
             Calendrier
-          </button>
-          {/* Bouton Notifications Mobile */}
-          <button
-            onClick={() => navigate('/settings/notifications')}
-            className={`py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-              isActive('/settings/notifications')
-                ? 'bg-primary-500 text-white'
-                : 'text-secondary hover:text-primary hover:bg-primary/10'
-            }`}
-          >
-            🔔 Notifs
           </button>
         </nav>
       </div>
