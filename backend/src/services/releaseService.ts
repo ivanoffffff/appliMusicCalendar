@@ -122,16 +122,26 @@ class ReleaseService {
                 }
 
                 // Créer la nouvelle sortie avec les données Deezer si disponibles
-                const newRelease = await prisma.release.create({
-                  data: {
+                const newRelease = await prisma.release.upsert({
+                  where: { spotifyId: release.id },
+                  update: {
+                    // Mettre à jour si existe déjà
+                    deezerId: deezerId || undefined,
+                    deezerUrl: deezerUrl || undefined,
+                    imageUrl: release.images[0]?.url,
+                    spotifyUrl: release.external_urls.spotify,
+                    trackCount: release.total_tracks,
+                  },
+                  create: {
+                    // Créer si n'existe pas
                     spotifyId: release.id,
-                    deezerId: deezerId,
+                    deezerId: deezerId || undefined,
                     name: release.name,
                     releaseType: this.mapAlbumType(release.album_type),
                     releaseDate: new Date(release.release_date),
                     imageUrl: release.images[0]?.url,
                     spotifyUrl: release.external_urls.spotify,
-                    deezerUrl: deezerUrl,
+                    deezerUrl: deezerUrl || undefined,
                     trackCount: release.total_tracks,
                     artistId: artist.id,
                   },
