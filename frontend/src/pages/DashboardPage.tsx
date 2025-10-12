@@ -67,7 +67,7 @@ const DashboardPage: React.FC = () => {
   const topArtists = React.useMemo(() => {
     return [...favorites]
       .sort((a, b) => (b.artist.popularity || 0) - (a.artist.popularity || 0))
-      .slice(0, 5); // Top 5
+      .slice(0, 4); // Top 5
   }, [favorites]);
 
   // 🎵 CALCUL DE LA RÉPARTITION DES GENRES
