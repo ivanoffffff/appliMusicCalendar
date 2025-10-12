@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { notificationService } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/ui/Header';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
@@ -15,6 +16,7 @@ interface NotificationPreferences {
 }
 
 const NotificationSettingsPage: React.FC = () => {
+  const { user, logout } = useAuth();
   const [preferences, setPreferences] = useState<NotificationPreferences>({
     emailNotifications: true,
     notificationTypes: {
@@ -91,69 +93,96 @@ const NotificationSettingsPage: React.FC = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 pb-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* En-tête */}
+          {/* En-tête avec info utilisateur et bouton déconnexion */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              🔔 Paramètres de notification
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Personnalisez comment et quand vous souhaitez recevoir des notifications
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                  🔔 Paramètres de notification
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Personnalisez comment et quand vous souhaitez recevoir des notifications
+                </p>
+              </div>
+              
+              {/* Bouton Déconnexion */}
+              <button
+                onClick={logout}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center space-x-2"
+              >
+                <span>🚪</span>
+                <span>Déconnexion</span>
+              </button>
+            </div>
+
+            {/* Info utilisateur */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-primary-400 to-accent-500 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                  {(user?.firstName?.[0] || user?.username?.[0] || 'U').toUpperCase()}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    {user?.firstName || user?.username}
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {user?.email}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Message de confirmation */}
           {message && (
             <div className={`mb-6 p-4 rounded-lg ${
               isError 
-                ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
-                : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                ? 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800'
+                : 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800'
             }`}>
               {message}
             </div>
           )}
 
-          <div className="space-y-6">
-            
-            {/* Activer/Désactiver les emails */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between">
+          {/* Paramètres de notifications */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="p-6 space-y-6">
+              
+              {/* Activation des notifications email */}
+              <div className="flex items-center justify-between pb-6 border-b border-gray-200 dark:border-gray-700">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                    Notifications par email
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    📧 Notifications par email
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     Recevoir des emails pour les nouvelles sorties
                   </p>
                 </div>
                 <button
-                  type="button"
-                  onClick={() => setPreferences(prev => ({ 
-                    ...prev, 
-                    emailNotifications: !prev.emailNotifications 
+                  onClick={() => setPreferences(prev => ({
+                    ...prev,
+                    emailNotifications: !prev.emailNotifications
                   }))}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
                     preferences.emailNotifications 
                       ? 'bg-purple-600' 
-                      : 'bg-gray-200 dark:bg-gray-700'
+                      : 'bg-gray-300 dark:bg-gray-600'
                   }`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      preferences.emailNotifications ? 'translate-x-6' : 'translate-x-1'
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                      preferences.emailNotifications ? 'translate-x-7' : 'translate-x-1'
                     }`}
                   />
                 </button>
               </div>
-            </div>
 
-            {/* Types de sorties */}
-            {preferences.emailNotifications && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+              {/* Types de sorties */}
+              <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Types de sorties à notifier
+                  🎼 Types de sorties à suivre
                 </h3>
-                <div className="space-y-4">
-                  
+                <div className="space-y-3">
                   <label className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
                     <div className="flex items-center">
                       <span className="text-2xl mr-3">💿</span>
@@ -221,144 +250,122 @@ const NotificationSettingsPage: React.FC = () => {
                   </label>
                 </div>
               </div>
-            )}
 
-            {/* Fréquence */}
-            {preferences.emailNotifications && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+              {/* Fréquence des notifications */}
+              <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Fréquence des notifications
+                  ⏰ Fréquence des notifications
                 </h3>
-                <div className="space-y-3">
-                  
-                  <label className="flex items-center p-4 rounded-lg border-2 cursor-pointer transition-colors"
-                    style={{
-                      borderColor: preferences.frequency === 'immediate' ? '#8b5cf6' : 'transparent',
-                      backgroundColor: preferences.frequency === 'immediate' ? 'rgba(139, 92, 246, 0.1)' : 'transparent'
-                    }}>
+                <div className="space-y-2">
+                  <label className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
                     <input
                       type="radio"
                       name="frequency"
+                      value="immediate"
                       checked={preferences.frequency === 'immediate'}
-                      onChange={() => setPreferences(prev => ({ ...prev, frequency: 'immediate' }))}
-                      className="h-4 w-4 text-purple-600"
+                      onChange={(e) => setPreferences(prev => ({
+                        ...prev,
+                        frequency: e.target.value as 'immediate' | 'daily' | 'weekly'
+                      }))}
+                      className="h-4 w-4 text-purple-600 focus:ring-purple-500"
                     />
-                    <div className="ml-3">
-                      <div className="font-medium text-gray-900 dark:text-white">⚡ Immédiate</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Recevoir un email dès qu'une sortie est disponible
-                      </div>
-                    </div>
+                    <span className="ml-3 text-gray-900 dark:text-white">
+                      Immédiatement - Dès qu'une sortie est détectée
+                    </span>
                   </label>
 
-                  <label className="flex items-center p-4 rounded-lg border-2 cursor-pointer transition-colors"
-                    style={{
-                      borderColor: preferences.frequency === 'daily' ? '#8b5cf6' : 'transparent',
-                      backgroundColor: preferences.frequency === 'daily' ? 'rgba(139, 92, 246, 0.1)' : 'transparent'
-                    }}>
+                  <label className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
                     <input
                       type="radio"
                       name="frequency"
+                      value="daily"
                       checked={preferences.frequency === 'daily'}
-                      onChange={() => setPreferences(prev => ({ ...prev, frequency: 'daily' }))}
-                      className="h-4 w-4 text-purple-600"
+                      onChange={(e) => setPreferences(prev => ({
+                        ...prev,
+                        frequency: e.target.value as 'immediate' | 'daily' | 'weekly'
+                      }))}
+                      className="h-4 w-4 text-purple-600 focus:ring-purple-500"
                     />
-                    <div className="ml-3">
-                      <div className="font-medium text-gray-900 dark:text-white">📅 Quotidienne</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Un résumé des sorties du jour (à 9h00)
-                      </div>
-                    </div>
+                    <span className="ml-3 text-gray-900 dark:text-white">
+                      Quotidien - Un résumé chaque jour
+                    </span>
                   </label>
 
-                  <label className="flex items-center p-4 rounded-lg border-2 cursor-pointer transition-colors"
-                    style={{
-                      borderColor: preferences.frequency === 'weekly' ? '#8b5cf6' : 'transparent',
-                      backgroundColor: preferences.frequency === 'weekly' ? 'rgba(139, 92, 246, 0.1)' : 'transparent'
-                    }}>
+                  <label className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
                     <input
                       type="radio"
                       name="frequency"
+                      value="weekly"
                       checked={preferences.frequency === 'weekly'}
-                      onChange={() => setPreferences(prev => ({ ...prev, frequency: 'weekly' }))}
-                      className="h-4 w-4 text-purple-600"
+                      onChange={(e) => setPreferences(prev => ({
+                        ...prev,
+                        frequency: e.target.value as 'immediate' | 'daily' | 'weekly'
+                      }))}
+                      className="h-4 w-4 text-purple-600 focus:ring-purple-500"
                     />
-                    <div className="ml-3">
-                      <div className="font-medium text-gray-900 dark:text-white">📆 Hebdomadaire</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Un résumé des sorties de la semaine (lundi à 9h00)
-                      </div>
-                    </div>
+                    <span className="ml-3 text-gray-900 dark:text-white">
+                      Hebdomadaire - Un résumé chaque semaine
+                    </span>
                   </label>
                 </div>
               </div>
-            )}
 
-            {/* Récapitulatif hebdomadaire */}
-            {preferences.emailNotifications && (
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl shadow-sm p-6 border-2 border-purple-200 dark:border-purple-800">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center mb-2">
-                      <span className="text-2xl mr-2">📧</span>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Récapitulatif hebdomadaire
+              {/* Résumé hebdomadaire */}
+              {preferences.frequency !== 'weekly' && (
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-base font-medium text-gray-900 dark:text-white">
+                        📊 Résumé hebdomadaire
                       </h3>
-                      <span className="ml-2 px-2 py-1 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 rounded-full">
-                        NOUVEAU
-                      </span>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Recevoir un récapitulatif chaque semaine en plus des notifications
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      Recevez un email récapitulatif tous les <strong>vendredis à 10h00</strong> avec toutes les sorties de vos artistes favoris de la semaine
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500">
-                      📅 Période : du lundi au dimanche • 🎵 Toutes les sorties en un seul email
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setPreferences(prev => ({ 
-                      ...prev, 
-                      weeklySummary: !prev.weeklySummary 
-                    }))}
-                    className={`ml-4 relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      preferences.weeklySummary 
-                        ? 'bg-purple-600' 
-                        : 'bg-gray-300 dark:bg-gray-600'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        preferences.weeklySummary ? 'translate-x-6' : 'translate-x-1'
+                    <button
+                      onClick={() => setPreferences(prev => ({
+                        ...prev,
+                        weeklySummary: !prev.weeklySummary
+                      }))}
+                      className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+                        preferences.weeklySummary 
+                          ? 'bg-purple-600' 
+                          : 'bg-gray-300 dark:bg-gray-600'
                       }`}
-                    />
-                  </button>
+                    >
+                      <span
+                        className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                          preferences.weeklySummary ? 'translate-x-7' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Bouton Enregistrer */}
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={loadPreferences}
-                className="px-6 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={savePreferences}
-                disabled={isSaving}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {isSaving ? (
-                  <>
-                    <LoadingSpinner size="sm" />
-                    <span className="ml-2">Enregistrement...</span>
-                  </>
-                ) : (
-                  '💾 Enregistrer les préférences'
-                )}
-              </button>
+              {/* Boutons d'action */}
+              <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={loadPreferences}
+                  className="px-6 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={savePreferences}
+                  disabled={isSaving}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {isSaving ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      <span className="ml-2">Enregistrement...</span>
+                    </>
+                  ) : (
+                    '💾 Enregistrer les préférences'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

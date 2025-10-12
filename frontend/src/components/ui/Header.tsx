@@ -4,7 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Header: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   
   // Gestion sécurisée du thème avec fallback
   let theme = 'dark';
@@ -43,16 +43,6 @@ const Header: React.FC = () => {
             {/* Navigation Desktop */}
             <nav className="hidden md:flex space-x-6">
               <button
-                onClick={() => navigate('/dashboard')}
-                className={`px-3 py-2 rounded-lg font-medium transition-all duration-300 ${
-                  isActive('/dashboard')
-                    ? 'bg-primary-500 text-white shadow-glow'
-                    : 'text-secondary hover:text-primary hover:bg-primary/10'
-                }`}
-              >
-                Dashboard
-              </button>
-              <button
                 onClick={() => navigate('/artists')}
                 className={`px-3 py-2 rounded-lg font-medium transition-all duration-300 ${
                   isActive('/artists')
@@ -71,17 +61,6 @@ const Header: React.FC = () => {
                 }`}
               >
                 Calendrier
-              </button>
-              {/* 🆕 NOUVEAU BOUTON - Notifications */}
-              <button
-                onClick={() => navigate('/settings/notifications')}
-                className={`px-3 py-2 rounded-lg font-medium transition-all duration-300 ${
-                  isActive('/settings/notifications')
-                    ? 'bg-primary-500 text-white shadow-glow'
-                    : 'text-secondary hover:text-primary hover:bg-primary/10'
-                }`}
-              >
-                🔔 Notifications
               </button>
             </nav>
           </div>
@@ -108,18 +87,14 @@ const Header: React.FC = () => {
                 </p>
               </div>
               
-              {/* Avatar */}
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-accent-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+              {/* Avatar - Cliquable pour ouvrir les notifications */}
+              <div 
+                onClick={() => navigate('/settings/notifications')}
+                className="w-10 h-10 bg-gradient-to-br from-primary-400 to-accent-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg cursor-pointer hover:scale-110 transition-transform duration-300 hover:shadow-xl"
+                title="Voir mon profil et notifications"
+              >
                 {(user?.firstName?.[0] || user?.username?.[0] || 'U').toUpperCase()}
               </div>
-
-              {/* Bouton déconnexion */}
-              <button
-                onClick={logout}
-                className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg"
-              >
-                Déconnexion
-              </button>
             </div>
           </div>
         </div>
@@ -156,7 +131,7 @@ const Header: React.FC = () => {
           >
             Calendrier
           </button>
-          {/* 🆕 NOUVEAU BOUTON - Notifications Mobile */}
+          {/* Bouton Notifications Mobile */}
           <button
             onClick={() => navigate('/settings/notifications')}
             className={`py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
