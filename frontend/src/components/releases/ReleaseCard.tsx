@@ -136,7 +136,7 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release }) => {
                   href={release.spotifyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn-spotify text-sm px-4 py-2 flex items-center space-x-2 hover:shadow-spotify"
+                  className="btn-spotify text-sm px-3 py-2 flex items-center space-x-2 hover:shadow-spotify"
                   title={isUpcoming ? "Pré-enregistrer sur Spotify" : "Écouter sur Spotify"}
                 >
                   <SpotifyIcon className="w-4 h-4" />
@@ -149,7 +149,7 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release }) => {
                   href={release.deezerUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-gradient-to-r from-orange-500 to-pink-500 text-white text-sm px-4 py-2 rounded-xl flex items-center space-x-2 hover:shadow-lg hover:scale-105 transition-all duration-300 font-medium"
+                  className="bg-gradient-to-r from-orange-500 to-pink-500 text-white text-sm px-3 py-2 rounded-xl flex items-center space-x-2 hover:shadow-lg hover:scale-105 transition-all duration-300 font-medium"
                   title={isUpcoming ? "Pré-enregistrer sur Deezer" : "Écouter sur Deezer"}
                 >
                   <DeezerIcon className="w-4 h-4" />
