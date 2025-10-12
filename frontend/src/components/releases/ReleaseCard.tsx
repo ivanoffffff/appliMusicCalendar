@@ -140,7 +140,6 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release }) => {
                   title={isUpcoming ? "Pré-enregistrer sur Spotify" : "Écouter sur Spotify"}
                 >
                   <SpotifyIcon className="w-4 h-4" />
-                  <span>{isUpcoming ? 'Pré-enregistrer' : 'Spotify'}</span>
                 </a>
               )}
 
