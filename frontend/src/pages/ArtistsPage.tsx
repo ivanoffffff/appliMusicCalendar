@@ -12,7 +12,8 @@ const ArtistsPage: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('search');
+  // ✨ Onglet par défaut changé à 'favorites'
+  const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('favorites');
 
   useEffect(() => {
     loadFavorites();
@@ -230,14 +231,14 @@ const ArtistsPage: React.FC = () => {
                     <ArtistCard
                       artist={{
                         spotifyId: favorite.artist.spotifyId!,
-                        deezerId: favorite.artist.deezerId,  // 🆕 Ajout deezerId
+                        deezerId: favorite.artist.deezerId,
                         name: favorite.artist.name,
                         genres: favorite.artist.genres,
                         imageUrl: favorite.artist.imageUrl || undefined,
                         popularity: favorite.artist.popularity || 0,
                         followers: favorite.artist.followers || 0,
                         spotifyUrl: favorite.artist.spotifyUrl || `https://open.spotify.com/artist/${favorite.artist.spotifyId}`,
-                        deezerUrl: favorite.artist.deezerUrl,  // 🆕 Ajout deezerUrl
+                        deezerUrl: favorite.artist.deezerUrl,
                       }}
                       isFavorite={true}
                       onToggleFavorite={handleToggleFavorite}

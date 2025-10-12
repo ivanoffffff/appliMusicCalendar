@@ -14,7 +14,8 @@ const ReleasesPage: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState('');
   const [selectedRelease, setSelectedRelease] = useState<Release | null>(null);
-  const [view, setView] = useState<'calendar' | 'list'>('calendar');
+  // ✨ Vue par défaut changée à 'list'
+  const [view, setView] = useState<'calendar' | 'list'>('list');
   const [filter, setFilter] = useState<'all' | 'past' | 'upcoming'>('all');
 
   useEffect(() => {
@@ -167,42 +168,6 @@ const ReleasesPage: React.FC = () => {
                 📋 Vue liste
               </button>
             </div>
-
-            {/* ✨ Filtres pour la vue liste */}
-            {view === 'list' && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setFilter('all')}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ${
-                    filter === 'all'
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  Tout
-                </button>
-                <button
-                  onClick={() => setFilter('upcoming')}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ${
-                    filter === 'upcoming'
-                      ? 'bg-orange-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  🗓️ À venir ({upcomingCount})
-                </button>
-                <button
-                  onClick={() => setFilter('past')}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ${
-                    filter === 'past'
-                      ? 'bg-gray-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  📅 Sorties
-                </button>
-              </div>
-            )}
             
             <button
               onClick={syncReleases}
@@ -280,18 +245,12 @@ const ReleasesPage: React.FC = () => {
               <div className="space-y-4">
                 {filteredReleases.length === 0 ? (
                   <div className="text-center py-12 music-card">
-                    <p className="text-secondary">
-                      {filter === 'upcoming' 
-                        ? "Aucune sortie à venir pour le moment 📅"
-                        : "Aucune sortie correspondante"}
-                    </p>
+                    <p className="text-secondary">Aucune sortie disponible</p>
                   </div>
                 ) : (
                   <>
                     <h2 className="text-lg font-semibold text-primary">
-                      {filter === 'all' && `Toutes les sorties (${filteredReleases.length})`}
-                      {filter === 'upcoming' && `Sorties à venir (${filteredReleases.length})`}
-                      {filter === 'past' && `Sorties disponibles (${filteredReleases.length})`}
+                      Toutes les sorties ({filteredReleases.length})
                     </h2>
                     {filteredReleases.map(release => (
                       <ReleaseCard
