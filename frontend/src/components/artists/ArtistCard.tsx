@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { Artist } from '../../types';
+import { SpotifyIcon, DeezerIcon } from '../common/PlatformIcons';
 
 interface ArtistCardProps {
   artist: Artist;
@@ -151,8 +152,7 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
                   className="btn-spotify text-sm px-3 py-2 flex items-center space-x-1 hover:shadow-spotify"
                   title="Ouvrir sur Spotify"
                 >
-                  <span>🎵</span>
-                  <span>Spotify</span>
+                  <SpotifyIcon className="w-4 h-4" />
                 </a>
               )}
 
@@ -165,8 +165,7 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
                   className="bg-gradient-to-r from-orange-500 to-pink-500 text-white text-sm px-3 py-2 rounded-xl flex items-center space-x-1 hover:shadow-lg hover:scale-105 transition-all duration-300 font-medium"
                   title="Ouvrir sur Deezer"
                 >
-                  <span>🎧</span>
-                  <span>Deezer</span>
+                  <DeezerIcon className="w-4 h-4" />
                 </a>
               )}
             </div>

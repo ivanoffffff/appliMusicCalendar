@@ -1,4 +1,5 @@
 import React from 'react';
+import { SpotifyIcon, DeezerIcon } from '../common/PlatformIcons';
 
 interface TopArtistCardProps {
   rank: number;
@@ -83,13 +84,13 @@ const TopArtistCard: React.FC<TopArtistCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
           <div className="flex gap-2">
             {spotifyUrl && (
-              <div className="bg-spotify-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-                🎧 Spotify
+              <div className="bg-spotify-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5">
+                <SpotifyIcon className="w-3.5 h-3.5" />
               </div>
             )}
             {deezerUrl && (
-              <div className="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-                🎵 Deezer
+              <div className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5">
+                <DeezerIcon className="w-3.5 h-3.5" />
               </div>
             )}
           </div>
