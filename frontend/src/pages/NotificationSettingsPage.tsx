@@ -90,13 +90,13 @@ const NotificationSettingsPage: React.FC = () => {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 pb-12">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-10 pb-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           
           {/* En-tête avec info utilisateur et bouton déconnexion */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div>
+            <div className="flex items-center justify-center mb-4">
+              <div className="text-center">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                   🔔 Paramètres de notification
                 </h1>
