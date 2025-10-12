@@ -30,50 +30,62 @@ interface WeeklySummaryData {
 }
 
 class EmailService {
-  private resendApiKey: string;
+  private sendgridApiKey: string;
   private fromEmail: string;
+  private fromName: string;
 
   constructor() {
-    this.resendApiKey = process.env.RESEND_API_KEY || '';
-    this.fromEmail = process.env.SMTP_FROM_EMAIL || 'onboarding@resend.dev';
+    this.sendgridApiKey = process.env.SENDGRID_API_KEY || '';
+    this.fromEmail = process.env.SMTP_FROM_EMAIL || '';
+    this.fromName = 'Music Tracker';
     
-    if (!this.resendApiKey) {
-      console.warn('⚠️ RESEND_API_KEY non configurée, les emails ne seront pas envoyés');
+    if (!this.sendgridApiKey) {
+      console.warn('⚠️ SENDGRID_API_KEY non configurée, les emails ne seront pas envoyés');
+    } else if (!this.fromEmail) {
+      console.warn('⚠️ SMTP_FROM_EMAIL non configurée, les emails ne seront pas envoyés');
     } else {
-      console.log('✅ Service email Resend initialisé');
+      console.log(`✅ Service email SendGrid initialisé (from: ${this.fromEmail})`);
     }
   }
 
   async sendNewReleaseNotification(data: NotificationData): Promise<boolean> {
     try {
-      if (!this.resendApiKey) {
-        console.error('❌ RESEND_API_KEY manquante');
+      if (!this.sendgridApiKey || !this.fromEmail) {
+        console.error('❌ Configuration SendGrid manquante');
         return false;
       }
 
       const htmlContent = this.generateReleaseEmailTemplate(data);
       
       const response = await axios.post(
-        'https://api.resend.com/emails',
+        'https://api.sendgrid.com/v3/mail/send',
         {
-          from: `Music Tracker <${this.fromEmail}>`,
-          to: [data.userEmail],
-          subject: `🎵 Nouvelle sortie de ${data.artistName} !`,
-          html: htmlContent,
+          personalizations: [{
+            to: [{ email: data.userEmail }],
+            subject: `🎵 Nouvelle sortie de ${data.artistName} !`
+          }],
+          from: {
+            email: this.fromEmail,
+            name: this.fromName
+          },
+          content: [{
+            type: 'text/html',
+            value: htmlContent
+          }]
         },
         {
           headers: {
-            'Authorization': `Bearer ${this.resendApiKey}`,
+            'Authorization': `Bearer ${this.sendgridApiKey}`,
             'Content-Type': 'application/json',
           },
         }
       );
 
-      console.log(`✅ Email envoyé avec succès à ${data.userEmail}:`, response.data.id);
+      console.log(`✅ Email envoyé avec succès à ${data.userEmail} via SendGrid`);
       return true;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.error('❌ Erreur Resend API:', error.response?.data || error.message);
+        console.error('❌ Erreur SendGrid API:', error.response?.data || error.message);
       } else {
         console.error('❌ Erreur lors de l\'envoi de l\'email:', error);
       }
@@ -129,35 +141,43 @@ class EmailService {
 
   async sendWeeklySummaryEmail(data: WeeklySummaryData): Promise<boolean> {
     try {
-      if (!this.resendApiKey) {
-        console.error('❌ RESEND_API_KEY manquante');
+      if (!this.sendgridApiKey || !this.fromEmail) {
+        console.error('❌ Configuration SendGrid manquante');
         return false;
       }
 
       const htmlContent = this.generateWeeklySummaryTemplate(data);
       
       const response = await axios.post(
-        'https://api.resend.com/emails',
+        'https://api.sendgrid.com/v3/mail/send',
         {
-          from: `Music Tracker <${this.fromEmail}>`,
-          to: [data.userEmail],
-          subject: `🎵 Récapitulatif : ${data.totalReleases} nouvelle${data.totalReleases > 1 ? 's' : ''} sortie${data.totalReleases > 1 ? 's' : ''} cette semaine !`,
-          html: htmlContent,
+          personalizations: [{
+            to: [{ email: data.userEmail }],
+            subject: `🎵 Récapitulatif : ${data.totalReleases} nouvelle${data.totalReleases > 1 ? 's' : ''} sortie${data.totalReleases > 1 ? 's' : ''} cette semaine !`
+          }],
+          from: {
+            email: this.fromEmail,
+            name: this.fromName
+          },
+          content: [{
+            type: 'text/html',
+            value: htmlContent
+          }]
         },
         {
           headers: {
-            'Authorization': `Bearer ${this.resendApiKey}`,
+            'Authorization': `Bearer ${this.sendgridApiKey}`,
             'Content-Type': 'application/json',
           },
         }
       );
 
-      console.log(`✅ Récapitulatif envoyé à ${data.userEmail} (ID: ${response.data.id})`);
+      console.log(`✅ Récapitulatif envoyé à ${data.userEmail} via SendGrid`);
       return true;
 
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.error('❌ Erreur Resend API:', error.response?.data || error.message);
+        console.error('❌ Erreur SendGrid API:', error.response?.data || error.message);
       } else {
         console.error('❌ Erreur lors de l\'envoi du récapitulatif:', error);
       }
@@ -211,25 +231,25 @@ class EmailService {
 
   async testConnection(): Promise<boolean> {
     try {
-      if (!this.resendApiKey) {
-        console.error('❌ RESEND_API_KEY non configurée');
+      if (!this.sendgridApiKey) {
+        console.error('❌ SENDGRID_API_KEY non configurée');
         return false;
       }
 
-      // Test simple avec l'API Resend
-      const response = await axios.get('https://api.resend.com/emails', {
+      // Test simple avec l'API SendGrid
+      const response = await axios.get('https://api.sendgrid.com/v3/user/profile', {
         headers: {
-          'Authorization': `Bearer ${this.resendApiKey}`,
+          'Authorization': `Bearer ${this.sendgridApiKey}`,
         },
       });
 
-      console.log('✅ Connexion Resend API vérifiée avec succès');
+      console.log('✅ Connexion SendGrid API vérifiée avec succès');
       return true;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.error('❌ Erreur Resend API:', error.response?.data || error.message);
+        console.error('❌ Erreur SendGrid API:', error.response?.data || error.message);
       } else {
-        console.error('❌ Erreur de connexion Resend:', error);
+        console.error('❌ Erreur de connexion SendGrid:', error);
       }
       return false;
     }
