@@ -14,7 +14,6 @@ const ReleasesPage: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState('');
   const [selectedRelease, setSelectedRelease] = useState<Release | null>(null);
-  // ✨ Vue par défaut changée à 'list'
   const [view, setView] = useState<'calendar' | 'list'>('list');
   const [filter, setFilter] = useState<'all' | 'past' | 'upcoming'>('all');
 
@@ -27,7 +26,7 @@ const ReleasesPage: React.FC = () => {
       setIsLoading(true);
       setError('');
       
-      // ✅ Charger les sorties des 6 derniers mois jusqu'aux 6 prochains mois
+      // Charger les sorties des 6 derniers mois jusqu'aux 6 prochains mois
       const startDate = new Date();
       startDate.setMonth(startDate.getMonth() - 6);
       const endDate = new Date();
@@ -107,7 +106,6 @@ const ReleasesPage: React.FC = () => {
     setSelectedRelease(release);
   };
 
-  // ✨ Fonction de filtrage
   const getFilteredReleases = () => {
     const now = new Date();
     
@@ -122,7 +120,6 @@ const ReleasesPage: React.FC = () => {
   };
 
   const filteredReleases = getFilteredReleases();
-  const upcomingCount = releases.filter(r => new Date(r.releaseDate) > new Date()).length;
 
   if (isLoading) {
     return (
@@ -142,39 +139,51 @@ const ReleasesPage: React.FC = () => {
     <div className="min-h-screen bg-primary">
       <Header />
 
-      {/* Controls */}
-      <div className="bg-secondary/80 backdrop-blur-md border-b border-custom">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setView('calendar')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 ${
-                  view === 'calendar'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-                }`}
-              >
-                📅 Vue calendrier
-              </button>
+      {/* Controls - Version compacte */}
+      <div className="sticky top-14 md:top-16 z-40 bg-secondary/80 backdrop-blur-md border-b border-custom">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex justify-between items-center gap-3">
+            {/* Boutons de vue - Plus compacts sur mobile */}
+            <div className="flex gap-2">
               <button
                 onClick={() => setView('list')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 ${
+                className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-300 ${
                   view === 'list'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                    ? 'bg-primary-500 text-white shadow-glow'
+                    : 'bg-primary/10 text-secondary hover:text-primary hover:bg-primary/20'
                 }`}
               >
-                📋 Vue liste
+                📋 <span className="hidden sm:inline">Vue </span>Liste
+              </button>
+              <button
+                onClick={() => setView('calendar')}
+                className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-300 ${
+                  view === 'calendar'
+                    ? 'bg-primary-500 text-white shadow-glow'
+                    : 'bg-primary/10 text-secondary hover:text-primary hover:bg-primary/20'
+                }`}
+              >
+                📅 <span className="hidden sm:inline">Vue </span>Calendrier
               </button>
             </div>
             
+            {/* Bouton Synchroniser - Icône seule sur mobile */}
             <button
               onClick={syncReleases}
               disabled={isSyncing}
-              className="btn-spotify px-4 py-2 text-sm disabled:opacity-50"
+              className="btn-spotify px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm disabled:opacity-50 whitespace-nowrap"
             >
-              {isSyncing ? '🔄 Synchronisation...' : '🔄 Synchroniser'}
+              {isSyncing ? (
+                <>
+                  <span className="inline md:hidden">🔄</span>
+                  <span className="hidden md:inline">🔄 Synchronisation...</span>
+                </>
+              ) : (
+                <>
+                  <span className="inline md:hidden">🔄</span>
+                  <span className="hidden md:inline">🔄 Synchroniser</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -182,19 +191,19 @@ const ReleasesPage: React.FC = () => {
 
       {/* Message d'erreur ou de succès */}
       {error && (
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className={`px-4 py-3 rounded-md ${
+        <div className="max-w-7xl mx-auto px-4 pt-3">
+          <div className={`px-3 py-2 rounded-lg text-sm ${
             error.includes('✅') 
-              ? 'bg-green-50 border border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400'
-              : 'bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400'
+              ? 'bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400'
+              : 'bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400'
           }`}>
             {error}
           </div>
         </div>
       )}
 
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      {/* Main content avec padding bottom pour la bottom nav mobile */}
+      <main className="max-w-7xl mx-auto px-4 py-8 pb-24 md:pb-8">
         {releases.length === 0 ? (
           <div className="text-center py-12">
             <div className="music-card p-8 max-w-md mx-auto">
@@ -204,7 +213,7 @@ const ReleasesPage: React.FC = () => {
               <p className="text-secondary mb-6">
                 Ajoutez des artistes à vos favoris et synchronisez pour voir leurs sorties !
               </p>
-              <div className="space-x-4">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <a
                   href="/artists"
                   className="btn-primary px-6 py-2"
@@ -224,7 +233,7 @@ const ReleasesPage: React.FC = () => {
         ) : (
           <div>
             {view === 'calendar' ? (
-              <div className="music-card p-6">
+              <div className="music-card p-4 md:p-6">
                 <FullCalendar
                   plugins={[dayGridPlugin]}
                   initialView="dayGridMonth"

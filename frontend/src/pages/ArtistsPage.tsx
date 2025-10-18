@@ -12,7 +12,6 @@ const ArtistsPage: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(true);
   const [error, setError] = useState('');
-  // ✨ Onglet par défaut changé à 'favorites'
   const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('favorites');
 
   useEffect(() => {
@@ -87,23 +86,13 @@ const ArtistsPage: React.FC = () => {
     <div className="min-h-screen bg-primary">
       <Header />
 
-      {/* Tabs avec glassmorphism */}
-      <div className="sticky top-[72px] z-40 bg-secondary/80 backdrop-blur-md border-b border-custom">
+      {/* Tabs avec glassmorphism - Position ajustée pour mobile */}
+      <div className="sticky top-14 md:top-16 z-40 bg-secondary/80 backdrop-blur-md border-b border-custom">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex space-x-8">
             <button
-              onClick={() => setActiveTab('search')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
-                activeTab === 'search'
-                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                  : 'border-transparent text-secondary hover:text-primary'
-              }`}
-            >
-              🔍 Rechercher des artistes
-            </button>
-            <button
               onClick={() => setActiveTab('favorites')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 relative ${
+              className={`py-3 md:py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 relative ${
                 activeTab === 'favorites'
                   ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                   : 'border-transparent text-secondary hover:text-primary'
@@ -116,12 +105,22 @@ const ArtistsPage: React.FC = () => {
                 </span>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab('search')}
+              className={`py-3 md:py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
+                activeTab === 'search'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-secondary hover:text-primary'
+              }`}
+            >
+              🔍 Rechercher des artistes
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      {/* Main content avec padding bottom pour la bottom nav mobile */}
+      <main className="max-w-7xl mx-auto px-4 py-8 pb-24 md:pb-8">
         {activeTab === 'search' && (
           <div className="animate-entrance">
             {/* Formulaire de recherche amélioré */}

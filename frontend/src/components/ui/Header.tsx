@@ -15,7 +15,6 @@ const Header: React.FC = () => {
     theme = themeContext.theme;
     toggleTheme = themeContext.toggleTheme;
   } catch (error) {
-    // Si ThemeProvider n'est pas disponible, utiliser les valeurs par défaut
     console.warn('ThemeProvider not available, using default theme');
   }
   
@@ -25,22 +24,23 @@ const Header: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="bg-secondary/80 backdrop-blur-md border-b border-custom sticky top-0 z-50 animate-slide-down">
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="flex justify-between items-center">
-          {/* Logo et navigation */}
-          <div className="flex items-center space-x-8">
+    <>
+      {/* Header Desktop & Mobile - Version minimaliste */}
+      <header className="bg-secondary/80 backdrop-blur-md border-b border-custom sticky top-0 z-50 animate-slide-down">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex justify-between items-center">
+            {/* Logo */}
             <div 
               onClick={() => navigate('/dashboard')}
               className="flex items-center space-x-2 cursor-pointer group"
             >
-              <div className="text-3xl animate-bounce-subtle">🎵</div>
-              <h1 className="text-xl font-bold gradient-text group-hover:scale-105 transition-transform duration-300">
+              <div className="text-2xl md:text-3xl animate-bounce-subtle">🎵</div>
+              <h1 className="text-lg md:text-xl font-bold gradient-text group-hover:scale-105 transition-transform duration-300">
                 Music Tracker
               </h1>
             </div>
 
-            {/* Navigation Desktop */}
+            {/* Navigation Desktop uniquement */}
             <nav className="hidden md:flex space-x-6">
               <button
                 onClick={() => navigate('/artists')}
@@ -63,67 +63,93 @@ const Header: React.FC = () => {
                 Calendrier
               </button>
             </nav>
-          </div>
 
-          {/* Actions utilisateur */}
-          <div className="flex items-center space-x-4">
-            {/* Bouton thème */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all duration-300 hover:scale-110"
-              title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
-            >
-              {theme === 'dark' ? '☀️' : '🌙'}
-            </button>
-
-            {/* Info utilisateur */}
-            <div className="flex items-center space-x-3">
-              <div className="hidden sm:block text-right">
-                <p className="text-sm font-medium text-primary">
-                  {user?.firstName || user?.username}
-                </p>
-                <p className="text-xs text-secondary">
-                  Connecté
-                </p>
-              </div>
-              
-              {/* Avatar - Cliquable pour ouvrir les notifications */}
-              <div 
-                onClick={() => navigate('/settings/notifications')}
-                className="w-10 h-10 bg-gradient-to-br from-primary-400 to-accent-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg cursor-pointer hover:scale-110 transition-transform duration-300 hover:shadow-xl"
-                title="Voir mon profil et notifications"
+            {/* Actions utilisateur */}
+            <div className="flex items-center space-x-2 md:space-x-4">
+              {/* Bouton thème */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all duration-300 hover:scale-110"
+                title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
               >
-                {(user?.firstName?.[0] || user?.username?.[0] || 'U').toUpperCase()}
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
+
+              {/* Info utilisateur */}
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <div className="hidden md:block text-right">
+                  <p className="text-sm font-medium text-primary">
+                    {user?.firstName || user?.username}
+                  </p>
+                  <p className="text-xs text-secondary">
+                    Connecté
+                  </p>
+                </div>
+                
+                {/* Avatar */}
+                <div 
+                  onClick={() => navigate('/settings/notifications')}
+                  className="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-primary-400 to-accent-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg cursor-pointer hover:scale-110 transition-transform duration-300 hover:shadow-xl"
+                  title="Voir mon profil et notifications"
+                >
+                  {(user?.firstName?.[0] || user?.username?.[0] || 'U').toUpperCase()}
+                </div>
               </div>
             </div>
           </div>
         </div>
+      </header>
 
-        {/* Navigation mobile */}
-        <nav className="md:hidden mt-4 grid grid-cols-2 gap-2">
-          <button
-            onClick={() => navigate('/artists')}
-            className={`py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-              isActive('/artists')
-                ? 'bg-primary-500 text-white'
-                : 'text-secondary hover:text-primary hover:bg-primary/10'
-            }`}
-          >
-            Artistes
-          </button>
+      {/* Bottom Navigation - Mobile uniquement - Style flottant */}
+      <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-secondary/95 backdrop-blur-md border border-custom z-50 rounded-2xl shadow-2xl">
+        <div className="grid grid-cols-2 h-16">
+          {/* Bouton Calendrier */}
           <button
             onClick={() => navigate('/releases')}
-            className={`py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+            className={`flex flex-col items-center justify-center space-y-1 transition-all duration-300 ${
               isActive('/releases')
-                ? 'bg-primary-500 text-white'
-                : 'text-secondary hover:text-primary hover:bg-primary/10'
+                ? 'text-primary-500'
+                : 'text-secondary hover:text-primary'
             }`}
           >
-            Calendrier
+            <div className={`text-2xl transition-transform duration-300 ${
+              isActive('/releases') ? 'scale-110' : ''
+            }`}>
+              📅
+            </div>
+            <span className={`text-xs font-medium ${
+              isActive('/releases') ? 'font-bold' : ''
+            }`}>
+              Calendrier
+            </span>
           </button>
-        </nav>
-      </div>
-    </header>
+
+          
+          {/* Bouton Artistes */}
+          <button
+            onClick={() => navigate('/artists')}
+            className={`flex flex-col items-center justify-center space-y-1 transition-all duration-300 ${
+              isActive('/artists')
+                ? 'text-primary-500'
+                : 'text-secondary hover:text-primary'
+            }`}
+          >
+            <div className={`text-2xl transition-transform duration-300 ${
+              isActive('/artists') ? 'scale-110' : ''
+            }`}>
+              🎤
+            </div>
+            <span className={`text-xs font-medium ${
+              isActive('/artists') ? 'font-bold' : ''
+            }`}>
+              Artistes
+            </span>
+          </button>
+        </div>
+      </nav>
+
+
+    </>
   );
 };
 
