@@ -49,9 +49,9 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
   return (
     <div className="group music-card card-hover animate-entrance">
       <div className="flex items-start space-x-4">
-        {/* Image de l'artiste avec effet de chargement */}
+        {/* Image de l'artiste avec effet de chargement - TAILLE AUGMENTÉE */}
         <div className="flex-shrink-0 relative">
-          <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gradient-to-br from-primary-200 to-accent-200 dark:from-primary-800 dark:to-accent-800">
+          <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl overflow-hidden bg-gradient-to-br from-primary-200 to-accent-200 dark:from-primary-800 dark:to-accent-800">
             {artist.imageUrl ? (
               <>
                 {!imageLoaded && (
@@ -67,7 +67,7 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
                 />
               </>
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-4xl">
+              <div className="w-full h-full flex items-center justify-center text-4xl md:text-5xl">
                 🎤
               </div>
             )}
@@ -156,7 +156,7 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
                 </a>
               )}
 
-              {/* 🆕 Lien Deezer */}
+              {/* Lien Deezer */}
               {artist.deezerUrl && (
                 <a
                   href={artist.deezerUrl}

@@ -101,7 +101,7 @@ const Header: React.FC = () => {
       </header>
 
       {/* Bottom Navigation - Mobile uniquement - Style flottant */}
-      <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-secondary/95 backdrop-blur-md border border-custom z-50 rounded-2xl shadow-2xl">
+      <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-secondary/95 backdrop-blur-md border border-custom z-50 rounded-full shadow-2xl">
         <div className="grid grid-cols-2 h-16">
           {/* Bouton Calendrier */}
           <button
@@ -124,7 +124,7 @@ const Header: React.FC = () => {
             </span>
           </button>
 
-          
+
           {/* Bouton Artistes */}
           <button
             onClick={() => navigate('/artists')}
