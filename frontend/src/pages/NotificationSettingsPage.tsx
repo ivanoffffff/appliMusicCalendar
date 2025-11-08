@@ -361,7 +361,7 @@ const NotificationSettingsPage: React.FC = () => {
           </div>
         </div>
         {/* Bouton Déconnexion */}
-        <div className="flex justify-center items-start pt-5">
+        <div className="flex justify-center items-start pt-5 mb-10">
           <button
             onClick={logout}
             className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center space-x-2"
