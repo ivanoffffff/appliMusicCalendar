@@ -200,16 +200,16 @@ class ReleaseService {
 
       const data = await response.json();
       
-      // Inclure les sorties depuis 6 mois en arrière jusqu'à 6 mois dans le futur
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      
-      const sixMonthsAhead = new Date();
-      sixMonthsAhead.setMonth(sixMonthsAhead.getMonth() + 6);
-      
+      // Inclure les sorties depuis 3 mois en arrière jusqu'à 6 mois dans le futur
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+      const threeMonthsAhead = new Date();
+      threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3);
+
       return data.items.filter((album: SpotifyAlbum) => {
         const releaseDate = new Date(album.release_date);
-        return releaseDate >= sixMonthsAgo && releaseDate <= sixMonthsAhead;
+        return releaseDate >= threeMonthsAgo && releaseDate <= threeMonthsAhead;
       });
     } catch (error) {
       console.error('Erreur récupération albums artiste:', error);
