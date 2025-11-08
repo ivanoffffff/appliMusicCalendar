@@ -122,47 +122,75 @@ class ReleaseService {
                 }
 
                 // Créer la nouvelle sortie avec les données Deezer si disponibles
-                const newRelease = await prisma.release.upsert({
-                  where: { spotifyId: release.id },
-                  update: {
-                    // Mettre à jour si existe déjà
-                    deezerId: deezerId || undefined,
-                    deezerUrl: deezerUrl || undefined,
-                    imageUrl: release.images[0]?.url,
-                    spotifyUrl: release.external_urls.spotify,
-                    trackCount: release.total_tracks,
-                  },
-                  create: {
-                    // Créer si n'existe pas
-                    spotifyId: release.id,
-                    deezerId: deezerId || undefined,
-                    name: release.name,
-                    releaseType: this.mapAlbumType(release.album_type),
-                    releaseDate: new Date(release.release_date),
-                    imageUrl: release.images[0]?.url,
-                    spotifyUrl: release.external_urls.spotify,
-                    deezerUrl: deezerUrl || undefined,
-                    trackCount: release.total_tracks,
-                    artistId: artist.id,
-                  },
-                });
+                try {
+                  const newRelease = await prisma.release.upsert({
+                    where: { spotifyId: release.id },
+                    update: {
+                      // Mettre à jour si existe déjà
+                      deezerId: deezerId || undefined,
+                      deezerUrl: deezerUrl || undefined,
+                      imageUrl: release.images[0]?.url,
+                      spotifyUrl: release.external_urls.spotify,
+                      trackCount: release.total_tracks,
+                    },
+                    create: {
+                      // Créer si n'existe pas
+                      spotifyId: release.id,
+                      deezerId: deezerId || undefined,
+                      name: release.name,
+                      releaseType: this.mapAlbumType(release.album_type),
+                      releaseDate: new Date(release.release_date),
+                      imageUrl: release.images[0]?.url,
+                      spotifyUrl: release.external_urls.spotify,
+                      deezerUrl: deezerUrl || undefined,
+                      trackCount: release.total_tracks,
+                      artistId: artist.id,
+                    },
+                  });
 
-                newReleases.push(newRelease);
-
-                // 🆕 AJOUT : Envoyer une notification pour cette nouvelle sortie
-                // Uniquement si la date de sortie est récente (dans les 7 derniers jours)
-                const releaseDate = new Date(release.release_date);
-                const now = new Date();
-                const daysDiff = Math.floor((now.getTime() - releaseDate.getTime()) / (1000 * 60 * 60 * 24));
-                
-                // Si la sortie date de moins de 7 jours, envoyer une notification
-                if (daysDiff >= 0 && daysDiff <= 7) {
-                  try {
-                    await notificationService.sendNewReleaseNotifications(newRelease.id);
-                  } catch (notifError) {
-                    console.error('Erreur envoi notification:', notifError);
+                  newReleases.push(newRelease);
+                } catch (error: any) {
+                  // Si erreur de contrainte unique sur deezerId, c'est une collab
+                  if (error.code === 'P2002' && error.meta?.target?.includes('deezerId')) {
+                    console.log(`⚠️ Collaboration détectée: ${release.name} existe déjà avec ce deezerId`);
+                    
+                    // Créer quand même la release mais SANS deezerId pour éviter le conflit
+                    const newRelease = await prisma.release.create({
+                      data: {
+                        spotifyId: release.id,
+                        // Pas de deezerId pour éviter le conflit sur les collabs
+                        name: release.name,
+                        releaseType: this.mapAlbumType(release.album_type),
+                        releaseDate: new Date(release.release_date),
+                        imageUrl: release.images[0]?.url,
+                        spotifyUrl: release.external_urls.spotify,
+                        // Pas de deezerUrl non plus
+                        trackCount: release.total_tracks,
+                        artistId: artist.id,
+                      },
+                    });
+                    newReleases.push(newRelease);
+                    // 🆕 AJOUT : Envoyer une notification pour cette nouvelle sortie
+                    // Uniquement si la date de sortie est récente (dans les 7 derniers jours)
+                    const releaseDate = new Date(release.release_date);
+                    const now = new Date();
+                    const daysDiff = Math.floor((now.getTime() - releaseDate.getTime()) / (1000 * 60 * 60 * 24));
+                    
+                    // Si la sortie date de moins de 7 jours, envoyer une notification
+                    if (daysDiff >= 0 && daysDiff <= 7) {
+                      try {
+                        await notificationService.sendNewReleaseNotifications(newRelease.id);
+                      } catch (notifError) {
+                        console.error('Erreur envoi notification:', notifError);
+                      }
+                    }
+                  } else {
+                    // Autre erreur, on la propage
+                    throw error;
                   }
                 }
+
+                
               }
             }
           } catch (error) {
