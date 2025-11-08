@@ -36,7 +36,7 @@ const Header: React.FC = () => {
             >
               <div className="animate-bounce-subtle">
                 <img
-                  src="/logo.png"
+                  src="src/assets/logo.svg"
                   alt="Logo musique"
                   className="w-16 h-16 md:w-20 md:h-20 mx-auto"
                 />
