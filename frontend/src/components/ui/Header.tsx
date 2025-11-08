@@ -34,7 +34,13 @@ const Header: React.FC = () => {
               onClick={() => navigate('/dashboard')}
               className="flex items-center space-x-2 cursor-pointer group"
             >
-              <div className="text-2xl md:text-3xl animate-bounce-subtle">🎵</div>
+              <div className="animate-bounce-subtle">
+                <img
+                  src="src/assets/logo.png"
+                  alt="Logo musique"
+                  className="w-16 h-16 md:w-20 md:h-20 mx-auto"
+                />
+              </div>
               <h1 className="text-lg md:text-xl font-bold gradient-text group-hover:scale-105 transition-transform duration-300">
                 Music Tracker
               </h1>
