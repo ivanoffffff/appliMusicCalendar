@@ -1,4 +1,5 @@
 import React from 'react';
+import logo from './assets/logo.svg';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -36,7 +37,7 @@ const Header: React.FC = () => {
             >
               <div className="animate-bounce-subtle">
                 <img
-                  src="src/assets/logo.svg"
+                  src={logo}
                   alt="Logo musique"
                   className="w-16 h-16 md:w-20 md:h-20 mx-auto"
                 />
