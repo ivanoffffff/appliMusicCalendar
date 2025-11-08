@@ -1,5 +1,5 @@
 import React from 'react';
-import logo from './assets/logo.svg';
+import logo from '../../assets/logo.svg';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate, useLocation } from 'react-router-dom';
