@@ -1,8 +1,9 @@
 {
+  "builds": [
+    { "src": "frontend/vite.config.ts", "use": "@vercel/vite" }
+  ],
+  "outputDirectory": "frontend/dist",
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
