@@ -49,6 +49,10 @@ export default {
         'slide-up': 'slideUp 0.3s ease-out',
         'slide-down': 'slideDown 0.3s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
+        'float': 'float 6s ease-in-out infinite',
+        'shimmer': 'shimmer 2.5s linear infinite',
+        'pulse-slow': 'pulse 3s ease-in-out infinite',
+        'bar-fill': 'barFill 0.8s ease-out forwards',
       },
       keyframes: {
         bounceSubtle: {
@@ -67,6 +71,25 @@ export default {
           '0%': { transform: 'scale(0.9)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
         },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-12px)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        barFill: {
+          '0%': { width: '0%' },
+          '100%': { width: 'var(--bar-width)' },
+        },
+      },
+      boxShadow: {
+        'glow': '0 0 20px rgba(139, 92, 246, 0.18), 0 4px 15px rgba(0,0,0,0.08)',
+        'glow-blue': '0 0 20px rgba(59, 130, 246, 0.2)',
+        'glow-green': '0 0 20px rgba(16, 185, 129, 0.2)',
+        'card': '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)',
+        'card-hover': '0 4px 6px rgba(0,0,0,0.05), 0 10px 30px rgba(0,0,0,0.1)',
       },
     },
   },
