@@ -27,7 +27,7 @@ const groupByMonth = (list: Release[]): [string, Release[]][] => {
     if (!map[key]) map[key] = [];
     map[key].push(r);
   });
-  return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+  return Object.entries(map).sort(([a], [b]) => b.localeCompare(a));
 };
 
 const formatMonthLabel = (key: string) => {
@@ -365,7 +365,7 @@ const ReleasesPage: React.FC = () => {
                       {/* Cards du mois */}
                       <div className="space-y-3">
                         {monthReleases
-                          .sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime())
+                          .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
                           .map((release, i) => (
                             <div
                               key={release.id}
