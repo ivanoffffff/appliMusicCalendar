@@ -159,6 +159,60 @@
     animation: slideUp 0.55s ease-out 0.32s both;
   }
 
+  /* ─── FullCalendar theming ─── */
+  .fc .fc-button-primary {
+    background: #0ea5e9 !important;
+    border-color: #0ea5e9 !important;
+    border-radius: 0.6rem !important;
+    font-size: 0.78rem !important;
+    padding: 0.35rem 0.8rem !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+    transition: background 0.2s !important;
+  }
+  .fc .fc-button-primary:hover {
+    background: #0284c7 !important;
+    border-color: #0284c7 !important;
+  }
+  .fc .fc-button-primary:not(:disabled).fc-button-active,
+  .fc .fc-button-primary:not(:disabled):active {
+    background: #0369a1 !important;
+    border-color: #0369a1 !important;
+  }
+  .fc .fc-toolbar-title {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    color: rgb(var(--text-primary)) !important;
+  }
+  .fc .fc-col-header-cell-cushion,
+  .fc .fc-daygrid-day-number {
+    color: rgb(var(--text-secondary)) !important;
+    font-size: 0.78rem !important;
+    text-decoration: none !important;
+  }
+  .fc-theme-standard td,
+  .fc-theme-standard th,
+  .fc-theme-standard .fc-scrollgrid {
+    border-color: rgb(var(--border-color)) !important;
+  }
+  .fc .fc-daygrid-day.fc-day-today {
+    background: rgba(14, 165, 233, 0.07) !important;
+  }
+  .dark .fc .fc-daygrid-day.fc-day-today {
+    background: rgba(14, 165, 233, 0.13) !important;
+  }
+  .fc .fc-daygrid-event {
+    border-radius: 4px !important;
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+  }
+  .fc .fc-event-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dark .fc .fc-non-business { background: transparent !important; }
+  .dark .fc .fc-daygrid-day-bg { background: transparent !important; }
+
   /* ─── Scrollbar ─── */
   ::-webkit-scrollbar {
     width: 6px;
