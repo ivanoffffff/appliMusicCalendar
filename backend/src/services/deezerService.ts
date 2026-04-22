@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { deezerClient } from '../config/httpClient';
 
 // Types pour les réponses de l'API Deezer
 interface DeezerArtist {
@@ -77,7 +77,7 @@ class DeezerService {
     }
 
     try {
-      const response = await axios.get<DeezerSearchArtistResponse>(
+      const response = await deezerClient.get<DeezerSearchArtistResponse>(
         `${this.API_URL}/search/artist`,
         {
           params: {
@@ -99,7 +99,7 @@ class DeezerService {
    */
   async getArtistById(deezerId: string): Promise<NormalizedDeezerArtist | null> {
     try {
-      const response = await axios.get<DeezerArtist>(
+      const response = await deezerClient.get<DeezerArtist>(
         `${this.API_URL}/artist/${deezerId}`
       );
 
@@ -115,7 +115,7 @@ class DeezerService {
    */
   async getArtistAlbums(deezerId: string, limit: number = 50): Promise<NormalizedDeezerAlbum[]> {
     try {
-      const response = await axios.get<DeezerArtistAlbumsResponse>(
+      const response = await deezerClient.get<DeezerArtistAlbumsResponse>(
         `${this.API_URL}/artist/${deezerId}/albums`,
         {
           params: {
@@ -160,7 +160,7 @@ class DeezerService {
    */
   async testConnection(): Promise<boolean> {
     try {
-      const response = await axios.get(`${this.API_URL}/artist/27`); // Daft Punk comme test
+      const response = await deezerClient.get(`${this.API_URL}/artist/27`); // Daft Punk comme test
       return response.status === 200;
     } catch (error) {
       console.error('❌ Deezer connection test failed:', error);

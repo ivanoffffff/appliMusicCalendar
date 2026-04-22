@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { spotifyClient } from '../config/httpClient';
 import { SpotifySearchResponse, SpotifyTokenResponse, NormalizedArtist, SpotifyArtist } from '../types/spotify';
 
 class SpotifyService {
@@ -19,7 +19,7 @@ class SpotifyService {
     try {
       const credentials = Buffer.from(`${this.CLIENT_ID}:${this.CLIENT_SECRET}`).toString('base64');
       
-      const response = await axios.post<SpotifyTokenResponse>(
+      const response = await spotifyClient.post<SpotifyTokenResponse>(
         this.AUTH_URL,
         'grant_type=client_credentials',
         {
@@ -50,7 +50,7 @@ class SpotifyService {
     try {
       const accessToken = await this.getAccessToken();
       
-      const response = await axios.get<SpotifySearchResponse>(
+      const response = await spotifyClient.get<SpotifySearchResponse>(
         `${this.API_URL}/search`,
         {
           headers: {
@@ -75,7 +75,7 @@ class SpotifyService {
     try {
       const accessToken = await this.getAccessToken();
       
-      const response = await axios.get<SpotifyArtist>(
+      const response = await spotifyClient.get<SpotifyArtist>(
         `${this.API_URL}/artists/${spotifyId}`,
         {
           headers: {
