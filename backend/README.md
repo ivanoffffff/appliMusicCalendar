@@ -28,6 +28,10 @@ API REST Node.js/TypeScript pour l'application Music Tracker, permettant de gér
 - **Zod** - Validation des données
 - **Helmet** - Sécurité HTTP
 - **CORS** - Gestion des requêtes cross-origin
+- **Front** - Vercel
+- **Back** - Render
+- **BDD** - Neon
+- **Uptime** - uptimerobot
 
 ## 📦 Prérequis
 
