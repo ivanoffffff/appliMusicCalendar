@@ -1,4 +1,5 @@
 import prisma from '../config/database';
+import { spotifyClient } from '../config/httpClient';
 import spotifyService from './spotifyService';
 import deezerService from './deezerService';
 import notificationService from './notificationService';
@@ -212,21 +213,14 @@ class ReleaseService {
   async getArtistReleases(spotifyArtistId: string): Promise<SpotifyAlbum[]> {
     try {
       const accessToken = await (spotifyService as any).getAccessToken();
-      
-      const response = await fetch(
-        `https://api.spotify.com/v1/artists/${spotifyArtistId}/albums?include_groups=album,single,compilation&limit=50`,
+
+      const { data } = await spotifyClient.get<{ items: SpotifyAlbum[] }>(
+        `https://api.spotify.com/v1/artists/${spotifyArtistId}/albums`,
         {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-          },
+          headers: { Authorization: `Bearer ${accessToken}` },
+          params: { include_groups: 'album,single,compilation', limit: 50 },
         }
       );
-
-      if (!response.ok) {
-        throw new Error(`Spotify API error: ${response.status}`);
-      }
-
-      const data = await response.json();
       
       // Inclure les sorties depuis 3 mois en arrière jusqu'à 6 mois dans le futur
       const threeMonthsAgo = new Date();
