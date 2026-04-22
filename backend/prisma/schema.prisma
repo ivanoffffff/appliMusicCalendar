@@ -60,6 +60,7 @@ model UserFavorite {
   artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
 
   @@unique([userId, artistId])
+  @@index([artistId])
   @@map("user_favorites")
 }
 
@@ -85,6 +86,8 @@ model Release {
   artist            Artist            @relation(fields: [artistId], references: [id], onDelete: Cascade)
   notificationLogs  NotificationLog[]
 
+  @@index([artistId, releaseDate]) // requêtes "sorties d'un artiste triées par date"
+  @@index([releaseDate])           // tri/filtres globaux par date
   @@map("releases")
 }
 
@@ -137,6 +140,7 @@ model NotificationLog {
   metadata    String?  @default("{}")
 
   @@index([userId])
+  @@index([releaseId])
   @@index([sentAt])
   @@map("notification_logs")
 }
