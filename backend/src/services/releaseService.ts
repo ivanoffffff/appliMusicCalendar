@@ -1,7 +1,7 @@
 import prisma from '../config/database';
 import { spotifyClient } from '../config/httpClient';
 import spotifyService from './spotifyService';
-import deezerService from './deezerService';
+import deezerService, { NormalizedDeezerAlbum } from './deezerService';
 import notificationService from './notificationService';
 
 interface SpotifyAlbum {
@@ -72,7 +72,6 @@ class ReleaseService {
 
   async syncReleasesForUser(userId: string) {
     try {
-      // Récupérer les artistes favoris de l'utilisateur
       const userFavorites = await prisma.userFavorite.findMany({
         where: { userId },
         include: { artist: true },
@@ -82,131 +81,150 @@ class ReleaseService {
         return { message: 'Aucun artiste favori trouvé', releases: [] };
       }
 
+      // ── Étape 1 : fetch Spotify pour tous les artistes en parallèle ───────────
+      const spotifyResults = await Promise.allSettled(
+        userFavorites.map(async ({ artist }) => {
+          if (!artist.spotifyId) return { artist, releases: [] as SpotifyAlbum[] };
+          const releases = await this.getArtistReleases(artist.spotifyId);
+          return { artist, releases };
+        })
+      );
+
+      const artistReleasesList = spotifyResults
+        .filter((r): r is PromiseFulfilledResult<{ artist: any; releases: SpotifyAlbum[] }> =>
+          r.status === 'fulfilled'
+        )
+        .map(r => r.value)
+        .filter(({ releases }) => releases.length > 0);
+
+      // ── Étape 2 : une seule requête DB pour savoir quelles releases existent ──
+      const allSpotifyIds = artistReleasesList.flatMap(({ releases }) => releases.map(r => r.id));
+
+      if (allSpotifyIds.length === 0) {
+        return { message: '0 nouvelles sorties synchronisées', releases: [] };
+      }
+
+      const existingRows = await prisma.release.findMany({
+        where: { spotifyId: { in: allSpotifyIds } },
+        select: { spotifyId: true },
+      });
+      const existingIds = new Set(existingRows.map(r => r.spotifyId));
+
+      // ── Étape 3 : fetch Deezer une seule fois par artiste qui a des nouveautés
+      const artistsNeedingDeezer = artistReleasesList.filter(({ artist, releases }) =>
+        artist.deezerId && releases.some(r => !existingIds.has(r.id))
+      );
+
+      const deezerAlbumsByArtistId = new Map<string, NormalizedDeezerAlbum[]>();
+
+      await Promise.allSettled(
+        artistsNeedingDeezer.map(async ({ artist }) => {
+          try {
+            const albums = await deezerService.getArtistAlbums(artist.deezerId!, 50);
+            deezerAlbumsByArtistId.set(artist.id, albums);
+          } catch {
+            console.warn(`⚠️ Deezer indisponible pour ${artist.name}`);
+          }
+        })
+      );
+
+      // ── Étape 4 : upsert uniquement les nouvelles releases ────────────────────
       const newReleases: any[] = [];
 
-      // Pour chaque artiste favori, récupérer ses albums récents
-      for (const favorite of userFavorites) {
-        const artist = favorite.artist;
-        if (artist.spotifyId) {
-          try {
-            const artistReleases = await this.getArtistReleases(artist.spotifyId);
-            
-            for (const release of artistReleases) {
-              // Vérifier si la sortie existe déjà en base
-              const existingRelease = await prisma.release.findUnique({
-                where: { spotifyId: release.id },
-              });
+      for (const { artist, releases } of artistReleasesList) {
+        const deezerAlbums = deezerAlbumsByArtistId.get(artist.id) ?? [];
 
-              if (!existingRelease) {
-                // 🎵 Chercher la sortie sur Deezer pour enrichir les données
-                let deezerId: string | undefined;
-                let deezerUrl: string | undefined;
+        for (const release of releases) {
+          if (existingIds.has(release.id)) continue;
 
-                if (artist.deezerId) {
-                  try {
-                    const deezerAlbums = await deezerService.getArtistAlbums(artist.deezerId, 50);
-                    
-                    // Chercher une correspondance par nom (en normalisant)
-                    const normalizedReleaseName = this.normalizeName(release.name);
-                    const matchingDeezerAlbum = deezerAlbums.find(
-                      album => this.normalizeName(album.name) === normalizedReleaseName
-                    );
+          // Matching Deezer par nom normalisé
+          let deezerId: string | undefined;
+          let deezerUrl: string | undefined;
 
-                    if (matchingDeezerAlbum) {
-                      deezerId = matchingDeezerAlbum.deezerId;
-                      deezerUrl = matchingDeezerAlbum.deezerUrl;
-                      console.log(`✅ Deezer match found for release: ${release.name}`);
-                    }
-                  } catch (error) {
-                    console.log(`⚠️ Could not find Deezer match for release: ${release.name}`);
-                  }
-                }
-
-                // Créer la nouvelle sortie avec les données Deezer si disponibles
-                try {
-                  const newRelease = await prisma.release.upsert({
-                    where: { spotifyId: release.id },
-                    update: {
-                      // Mettre à jour si existe déjà
-                      deezerId: deezerId || undefined,
-                      deezerUrl: deezerUrl || undefined,
-                      imageUrl: release.images[0]?.url,
-                      spotifyUrl: release.external_urls.spotify,
-                      trackCount: release.total_tracks,
-                    },
-                    create: {
-                      // Créer si n'existe pas
-                      spotifyId: release.id,
-                      deezerId: deezerId || undefined,
-                      name: release.name,
-                      releaseType: this.mapAlbumType(release.album_type),
-                      releaseDate: new Date(release.release_date),
-                      imageUrl: release.images[0]?.url,
-                      spotifyUrl: release.external_urls.spotify,
-                      deezerUrl: deezerUrl || undefined,
-                      trackCount: release.total_tracks,
-                      artistId: artist.id,
-                    },
-                  });
-
-                  newReleases.push(newRelease);
-                } catch (error: any) {
-                  // Si erreur de contrainte unique sur deezerId, c'est une collab
-                  if (error.code === 'P2002' && error.meta?.target?.includes('deezerId')) {
-                    console.log(`⚠️ Collaboration détectée: ${release.name} existe déjà avec ce deezerId`);
-                    
-                    // Créer quand même la release mais SANS deezerId pour éviter le conflit
-                    const newRelease = await prisma.release.create({
-                      data: {
-                        spotifyId: release.id,
-                        // Pas de deezerId pour éviter le conflit sur les collabs
-                        name: release.name,
-                        releaseType: this.mapAlbumType(release.album_type),
-                        releaseDate: new Date(release.release_date),
-                        imageUrl: release.images[0]?.url,
-                        spotifyUrl: release.external_urls.spotify,
-                        // Pas de deezerUrl non plus
-                        trackCount: release.total_tracks,
-                        artistId: artist.id,
-                      },
-                    });
-                    newReleases.push(newRelease);
-                    // 🆕 AJOUT : Envoyer une notification pour cette nouvelle sortie
-                    // Uniquement si la date de sortie est récente (dans les 7 derniers jours)
-                    const releaseDate = new Date(release.release_date);
-                    const now = new Date();
-                    const daysDiff = Math.floor((now.getTime() - releaseDate.getTime()) / (1000 * 60 * 60 * 24));
-                    
-                    // Si la sortie date de moins de 7 jours, envoyer une notification
-                    if (daysDiff >= 0 && daysDiff <= 7) {
-                      try {
-                        await notificationService.sendNewReleaseNotifications(newRelease.id);
-                      } catch (notifError) {
-                        console.error('Erreur envoi notification:', notifError);
-                      }
-                    }
-                  } else {
-                    // Autre erreur, on la propage
-                    throw error;
-                  }
-                }
-
-                
-              }
+          if (deezerAlbums.length > 0) {
+            const normalized = this.normalizeName(release.name);
+            const match = deezerAlbums.find(a => this.normalizeName(a.name) === normalized);
+            if (match) {
+              deezerId = match.deezerId;
+              deezerUrl = match.deezerUrl;
+              console.log(`✅ Deezer match: ${release.name}`);
             }
-          } catch (error) {
-            console.error(`Erreur sync releases pour ${artist.name}:`, error);
+          }
+
+          try {
+            const newRelease = await prisma.release.upsert({
+              where: { spotifyId: release.id },
+              update: {
+                deezerId,
+                deezerUrl,
+                imageUrl: release.images[0]?.url,
+                spotifyUrl: release.external_urls.spotify,
+                trackCount: release.total_tracks,
+              },
+              create: {
+                spotifyId: release.id,
+                deezerId,
+                name: release.name,
+                releaseType: this.mapAlbumType(release.album_type),
+                releaseDate: new Date(release.release_date),
+                imageUrl: release.images[0]?.url,
+                spotifyUrl: release.external_urls.spotify,
+                deezerUrl,
+                trackCount: release.total_tracks,
+                artistId: artist.id,
+              },
+            });
+
+            newReleases.push(newRelease);
+            this.maybeNotify(newRelease.id, release.release_date);
+          } catch (error: any) {
+            // Conflit deezerId → collaboration entre artistes
+            if (error.code === 'P2002' && error.meta?.target?.includes('deezerId')) {
+              console.log(`⚠️ Collaboration détectée, création sans deezerId : ${release.name}`);
+              try {
+                const newRelease = await prisma.release.create({
+                  data: {
+                    spotifyId: release.id,
+                    name: release.name,
+                    releaseType: this.mapAlbumType(release.album_type),
+                    releaseDate: new Date(release.release_date),
+                    imageUrl: release.images[0]?.url,
+                    spotifyUrl: release.external_urls.spotify,
+                    trackCount: release.total_tracks,
+                    artistId: artist.id,
+                  },
+                });
+                newReleases.push(newRelease);
+                this.maybeNotify(newRelease.id, release.release_date);
+              } catch (createError) {
+                console.error(`Erreur création release sans deezerId: ${release.name}`, createError);
+              }
+            } else {
+              console.error(`Erreur upsert release: ${release.name}`, error);
+            }
           }
         }
       }
 
-      return { 
-        message: `${newReleases.length} nouvelles sorties synchronisées`, 
-        releases: newReleases 
+      return {
+        message: `${newReleases.length} nouvelles sorties synchronisées`,
+        releases: newReleases,
       };
     } catch (error) {
       console.error('Erreur sync releases:', error);
       throw new Error('Erreur lors de la synchronisation des sorties');
+    }
+  }
+
+  /** Envoie une notification si la sortie date de moins de 7 jours (fire-and-forget) */
+  private maybeNotify(releaseId: string, releaseDateStr: string): void {
+    const daysDiff = Math.floor(
+      (Date.now() - new Date(releaseDateStr).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (daysDiff >= 0 && daysDiff <= 7) {
+      notificationService
+        .sendNewReleaseNotifications(releaseId)
+        .catch(e => console.error('Erreur envoi notification:', e));
     }
   }
 
