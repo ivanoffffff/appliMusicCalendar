@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { SunIcon, MoonIcon, MusicNoteIcon, MicrophoneIcon, CalendarIcon, BellIcon } from '../components/ui/Icons';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -9,7 +10,7 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  
+
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,16 +39,18 @@ const LoginPage: React.FC = () => {
       {/* Theme toggle */}
       <button
         onClick={toggleTheme}
-        className="absolute top-6 right-6 p-3 rounded-xl glassmorphism hover:scale-110 transition-all duration-300 text-2xl z-10"
+        className="absolute top-6 right-6 p-3 rounded-xl glassmorphism hover:scale-110 transition-all duration-300 z-10"
         title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
       >
-        {theme === 'dark' ? '☀️' : '🌙'}
+        {theme === 'dark' ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
       </button>
 
       <div className="relative w-full max-w-md">
         {/* Logo et titre */}
         <div className="text-center mb-8 animate-entrance">
-          <div className="text-6xl mb-4 animate-bounce-subtle">🎵</div>
+          <div className="flex justify-center mb-4 animate-bounce-subtle">
+            <MusicNoteIcon className="w-14 h-14 text-primary-500" />
+          </div>
           <h1 className="text-3xl font-bold gradient-text mb-2">Music Tracker</h1>
           <p className="text-secondary">Connectez-vous à votre espace musical</p>
         </div>
@@ -120,15 +123,21 @@ const LoginPage: React.FC = () => {
         {/* Features preview */}
         <div className="mt-8 grid grid-cols-3 gap-4 animate-entrance-delay-2">
           <div className="text-center p-4 glassmorphism rounded-xl">
-            <div className="text-2xl mb-2">🎤</div>
+            <div className="flex justify-center mb-2">
+              <MicrophoneIcon className="w-6 h-6 text-primary-500" />
+            </div>
             <p className="text-xs text-secondary">Artistes favoris</p>
           </div>
           <div className="text-center p-4 glassmorphism rounded-xl">
-            <div className="text-2xl mb-2">📅</div>
+            <div className="flex justify-center mb-2">
+              <CalendarIcon className="w-6 h-6 text-primary-500" />
+            </div>
             <p className="text-xs text-secondary">Calendrier sorties</p>
           </div>
           <div className="text-center p-4 glassmorphism rounded-xl">
-            <div className="text-2xl mb-2">🔔</div>
+            <div className="flex justify-center mb-2">
+              <BellIcon className="w-6 h-6 text-primary-500" />
+            </div>
             <p className="text-xs text-secondary">Notifications</p>
           </div>
         </div>

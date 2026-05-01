@@ -1,4 +1,5 @@
 import React from 'react';
+import { MusicNoteIcon, TrophyIcon, MedalIcon, RainbowIcon } from '../ui/Icons';
 
 interface GenreData {
   name: string;
@@ -21,13 +22,15 @@ const COLORS = [
   '#f97316', // orange
 ];
 
-const MEDALS = ['🥇', '🥈', '🥉'];
+const MEDAL_RANKS = [1, 2, 3] as const;
 
 const GenreDistribution: React.FC<GenreDistributionProps> = ({ genres }) => {
   if (genres.length === 0) {
     return (
       <div className="music-card text-center py-16">
-        <div className="text-6xl mb-4 animate-float">🎵</div>
+        <div className="flex justify-center mb-4 animate-float">
+          <MusicNoteIcon className="w-14 h-14 text-primary-400" />
+        </div>
         <p className="text-secondary">
           Ajoutez des artistes pour voir la répartition des genres
         </p>
@@ -94,7 +97,10 @@ const GenreDistribution: React.FC<GenreDistributionProps> = ({ genres }) => {
 
         {/* Top 3 podium */}
         <div className="bg-white dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700/50 rounded-2xl p-6 shadow-card flex-1">
-          <h3 className="text-base font-bold text-primary mb-4">🏆 Top Genres</h3>
+          <h3 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
+            <TrophyIcon className="w-5 h-5 text-amber-500" />
+            Top Genres
+          </h3>
           <div className="space-y-3">
             {genres.slice(0, 3).map((genre, i) => (
               <div
@@ -105,7 +111,7 @@ const GenreDistribution: React.FC<GenreDistributionProps> = ({ genres }) => {
                   animationDelay: `${i * 80}ms`,
                 }}
               >
-                <span className="text-lg shrink-0">{MEDALS[i]}</span>
+                <MedalIcon className="w-5 h-5 shrink-0" rank={MEDAL_RANKS[i]} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-primary truncate">{genre.name}</p>
                   <p className="text-xs text-secondary">
@@ -125,7 +131,9 @@ const GenreDistribution: React.FC<GenreDistributionProps> = ({ genres }) => {
 
         {/* Diversité */}
         <div className="relative overflow-hidden bg-gradient-to-br from-primary-500/10 via-accent-500/10 to-spotify-500/10 dark:from-primary-900/25 dark:via-accent-900/20 dark:to-spotify-900/15 border border-primary-100 dark:border-primary-800/20 rounded-2xl p-6 shadow-card">
-          <div className="text-3xl mb-2 animate-bounce-subtle">🌈</div>
+          <div className="mb-2 animate-bounce-subtle">
+            <RainbowIcon className="w-8 h-8" />
+          </div>
           <p className="text-3xl font-black text-primary mb-0.5">{genres.length}</p>
           <p className="text-sm text-secondary">genres uniques découverts</p>
 

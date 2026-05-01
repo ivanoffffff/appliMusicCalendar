@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Release } from '../../types';
 import { SpotifyIcon, DeezerIcon } from '../common/PlatformIcons';
+import { MusicNoteIcon, DiscIcon, VinylIcon, CalendarIcon, ClockIcon } from '../ui/Icons';
 
 interface ReleaseCardProps {
   release:    Release;
@@ -9,13 +10,15 @@ interface ReleaseCardProps {
   isPlaying?: boolean;
 }
 
-const TYPE_CONFIG: Record<string, { label: string; emoji: string; color: string; badgeCls: string }> = {
-  ALBUM:  { label: 'Album',  emoji: '💿', color: '#8b5cf6', badgeCls: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
-  SINGLE: { label: 'Single', emoji: '🎵', color: '#10b981', badgeCls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  EP:     { label: 'EP',     emoji: '📀', color: '#3b82f6', badgeCls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+type TypeConfig = { label: string; Icon: React.FC<{ className?: string }>; color: string; badgeCls: string };
+
+const TYPE_CONFIG: Record<string, TypeConfig> = {
+  ALBUM:  { label: 'Album',  Icon: DiscIcon,      color: '#8b5cf6', badgeCls: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+  SINGLE: { label: 'Single', Icon: MusicNoteIcon,  color: '#10b981', badgeCls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  EP:     { label: 'EP',     Icon: VinylIcon,      color: '#3b82f6', badgeCls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
 };
 
-const FALLBACK_CONFIG = { label: 'Sortie', emoji: '🎵', color: '#6b7280', badgeCls: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' };
+const FALLBACK_CONFIG: TypeConfig = { label: 'Sortie', Icon: MusicNoteIcon, color: '#6b7280', badgeCls: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' };
 
 // Icône play/pause inline
 const PlayPauseIcon: React.FC<{ playing: boolean }> = ({ playing }) =>
@@ -35,6 +38,7 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({
   const [imageError, setImageError] = useState(false);
 
   const config = TYPE_CONFIG[release.releaseType] ?? FALLBACK_CONFIG;
+  const { Icon: TypeIcon } = config;
 
   const formatDate = (ds: string) =>
     new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(ds));
@@ -70,7 +74,9 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-3xl">🎵</div>
+          <div className="w-full h-full flex items-center justify-center">
+            <MusicNoteIcon className="w-8 h-8 text-primary-400" />
+          </div>
         )}
 
         {/* Overlay play/pause au survol */}
@@ -123,10 +129,14 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({
         {/* Méta-données */}
         <div className="flex flex-wrap items-center gap-2 mb-2.5">
           <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${config.badgeCls}`}>
-            {config.emoji} {config.label}
+            <TypeIcon className="w-3 h-3" /> {config.label}
           </span>
-          <span className={`text-xs ${isUpcoming ? 'text-orange-500 dark:text-orange-400 font-medium' : 'text-secondary'}`}>
-            {isUpcoming ? '🗓️' : '📅'} {formatDate(release.releaseDate)}
+          <span className={`inline-flex items-center gap-1 text-xs ${isUpcoming ? 'text-orange-500 dark:text-orange-400 font-medium' : 'text-secondary'}`}>
+            {isUpcoming
+              ? <ClockIcon className="w-3 h-3" />
+              : <CalendarIcon className="w-3 h-3" />
+            }
+            {formatDate(release.releaseDate)}
           </span>
           {release.trackCount && (
             <span className="text-xs text-secondary">

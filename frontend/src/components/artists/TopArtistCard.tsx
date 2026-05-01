@@ -1,5 +1,6 @@
 import React from 'react';
 import { SpotifyIcon, DeezerIcon } from '../common/PlatformIcons';
+import { MedalIcon, StarIcon, MusicNoteIcon } from '../ui/Icons';
 
 interface TopArtistCardProps {
   rank: number;
@@ -32,12 +33,7 @@ const TopArtistCard: React.FC<TopArtistCardProps> = ({
     return '#ef4444, #dc2626';                   // rouge
   };
 
-  const getMedal = (r: number) => {
-    if (r === 1) return '🥇';
-    if (r === 2) return '🥈';
-    if (r === 3) return '🥉';
-    return `#${r}`;
-  };
+  const isMedalRank = rank === 1 || rank === 2 || rank === 3;
 
   return (
     <div
@@ -47,8 +43,11 @@ const TopArtistCard: React.FC<TopArtistCardProps> = ({
     >
       {/* Rank badge */}
       <div className="absolute top-2.5 left-2.5 z-10">
-        <div className="bg-black/50 backdrop-blur-md text-white px-2.5 py-0.5 rounded-full text-xs font-bold shadow-md">
-          {getMedal(rank)}
+        <div className="bg-black/50 backdrop-blur-md text-white px-2.5 py-0.5 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
+          {isMedalRank
+            ? <MedalIcon className="w-4 h-4" rank={rank as 1 | 2 | 3} />
+            : `#${rank}`
+          }
         </div>
       </div>
 
@@ -56,7 +55,7 @@ const TopArtistCard: React.FC<TopArtistCardProps> = ({
       {rank === 1 && (
         <div className="absolute top-2.5 right-2.5 z-10">
           <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-md animate-pulse-slow flex items-center gap-1">
-            ⭐ Top
+            <StarIcon className="w-3 h-3" filled /> Top
           </div>
         </div>
       )}
@@ -70,8 +69,8 @@ const TopArtistCard: React.FC<TopArtistCardProps> = ({
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-5xl">
-            🎵
+          <div className="w-full h-full flex items-center justify-center">
+            <MusicNoteIcon className="w-12 h-12 text-primary-400" />
           </div>
         )}
 

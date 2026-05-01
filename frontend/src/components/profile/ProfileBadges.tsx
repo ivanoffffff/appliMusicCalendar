@@ -1,10 +1,19 @@
 import React from 'react';
+import {
+  TrophyIcon,
+  SeedlingIcon,
+  MusicNoteIcon,
+  GuitarIcon,
+  GlobeIcon,
+  MasksIcon,
+  TargetIcon,
+} from '../ui/Icons';
 
-interface Badge {
+interface BadgeDef {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  Icon: React.FC<{ className?: string }>;
   color: string;
   bgColor: string;
   earned: boolean;
@@ -24,12 +33,12 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({
   firstName
 }) => {
   // Définition des badges avec conditions
-  const badges: Badge[] = [
+  const badges: BadgeDef[] = [
     {
       id: 'newbie',
       title: 'Débutant',
       description: 'Premiers pas dans Music Tracker',
-      icon: '🌱',
+      Icon: SeedlingIcon,
       color: '#10b981',
       bgColor: '#10b98115',
       earned: totalArtists >= 1 && totalArtists < 5
@@ -38,7 +47,7 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({
       id: 'collector',
       title: 'Collectionneur',
       description: `${totalArtists} artistes suivis`,
-      icon: '🎵',
+      Icon: MusicNoteIcon,
       color: '#3b82f6',
       bgColor: '#3b82f615',
       earned: totalArtists >= 5 && totalArtists < 20
@@ -47,7 +56,7 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({
       id: 'mega-collector',
       title: 'Méga Collectionneur',
       description: `${totalArtists} artistes suivis !`,
-      icon: '🎸',
+      Icon: GuitarIcon,
       color: '#8b5cf6',
       bgColor: '#8b5cf615',
       earned: totalArtists >= 20
@@ -56,7 +65,7 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({
       id: 'explorer',
       title: 'Explorateur',
       description: `${totalGenres} genres différents`,
-      icon: '🌍',
+      Icon: GlobeIcon,
       color: '#f59e0b',
       bgColor: '#f59e0b15',
       earned: totalGenres >= 3 && totalGenres < 10
@@ -65,7 +74,7 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({
       id: 'music-guru',
       title: 'Guru Musical',
       description: `${totalGenres} genres explorés !`,
-      icon: '🎭',
+      Icon: MasksIcon,
       color: '#ec4899',
       bgColor: '#ec489915',
       earned: totalGenres >= 10
@@ -83,13 +92,14 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({
         <div className="w-20 h-20 bg-gradient-to-br from-primary-400 via-accent-500 to-spotify-500 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-glow animate-entrance">
           {(firstName?.[0] || username?.[0] || 'U').toUpperCase()}
         </div>
-        
+
         <div className="flex-1">
           <h3 className="text-2xl font-bold text-primary mb-1">
             {firstName || username || 'Utilisateur'}
           </h3>
-          <p className="text-sm text-secondary">
-            🎵 Passionné de musique
+          <p className="text-sm text-secondary flex items-center gap-1.5">
+            <MusicNoteIcon className="w-4 h-4 text-primary-500" />
+            Passionné de musique
           </p>
         </div>
       </div>
@@ -97,7 +107,8 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({
       {/* Section des badges */}
       <div className="mb-6">
         <h4 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
-          🏆 Vos Badges
+          <TrophyIcon className="w-5 h-5 text-amber-500" />
+          Vos Badges
           <span className="text-sm font-normal text-secondary">
             ({earnedBadges.length} débloqué{earnedBadges.length > 1 ? 's' : ''})
           </span>
@@ -115,15 +126,15 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({
                 }}
               >
                 {/* Icône du badge */}
-                <div className="text-3xl mb-2 group-hover:scale-100 transition-transform duration-300">
-                  {badge.icon}
+                <div className="mb-2 group-hover:scale-100 transition-transform duration-300">
+                  <badge.Icon className="w-8 h-8" style={{ color: badge.color } as React.CSSProperties} />
                 </div>
-                
+
                 {/* Titre */}
                 <h5 className="font-bold text-sm mb-1" style={{ color: badge.color }}>
                   {badge.title}
                 </h5>
-                
+
                 {/* Description */}
                 <p className="text-xs text-secondary">
                   {badge.description}
@@ -131,7 +142,7 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({
 
                 {/* Effet brillance */}
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-                  <div 
+                  <div
                     className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
                   />
                 </div>
@@ -140,7 +151,9 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({
           </div>
         ) : (
           <div className="text-center py-8 bg-primary/5 rounded-xl">
-            <div className="text-4xl mb-2">🎯</div>
+            <div className="flex justify-center mb-2">
+              <TargetIcon className="w-10 h-10 text-secondary" />
+            </div>
             <p className="text-secondary text-sm">
               Ajoutez des artistes pour débloquer vos premiers badges !
             </p>
@@ -158,7 +171,7 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({
             Artistes
           </div>
         </div>
-        
+
         <div className="text-center">
           <div className="text-2xl font-bold text-primary mb-1">
             {totalGenres}
@@ -167,7 +180,7 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({
             Genres
           </div>
         </div>
-        
+
         <div className="text-center">
           <div className="text-2xl font-bold text-primary mb-1">
             {earnedBadges.length}

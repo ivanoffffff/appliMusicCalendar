@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { SunIcon, MoonIcon, MusicNoteIcon, TargetIcon, LightningIcon, ChartBarIcon } from '../components/ui/Icons';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -14,7 +15,7 @@ const RegisterPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  
+
   const { register } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,16 +51,18 @@ const RegisterPage: React.FC = () => {
       {/* Theme toggle */}
       <button
         onClick={toggleTheme}
-        className="absolute top-6 right-6 p-3 rounded-xl glassmorphism hover:scale-110 transition-all duration-300 text-2xl z-10"
+        className="absolute top-6 right-6 p-3 rounded-xl glassmorphism hover:scale-110 transition-all duration-300 z-10"
         title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
       >
-        {theme === 'dark' ? '☀️' : '🌙'}
+        {theme === 'dark' ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
       </button>
 
       <div className="relative w-full max-w-md">
         {/* Logo et titre */}
         <div className="text-center mb-8 animate-entrance">
-          <div className="text-6xl mb-4 animate-bounce-subtle">🎵</div>
+          <div className="flex justify-center mb-4 animate-bounce-subtle">
+            <MusicNoteIcon className="w-14 h-14 text-primary-500" />
+          </div>
           <h1 className="text-3xl font-bold gradient-text mb-2">Rejoignez Music Tracker</h1>
           <p className="text-secondary">Créez votre compte et découvrez votre espace musical</p>
         </div>
@@ -186,15 +189,15 @@ const RegisterPage: React.FC = () => {
           <h3 className="text-lg font-semibold text-primary mb-4 text-center">Pourquoi rejoindre Music Tracker ?</h3>
           <div className="space-y-3">
             <div className="flex items-center space-x-3">
-              <div className="text-2xl">🎯</div>
+              <TargetIcon className="w-6 h-6 text-primary-500 shrink-0" />
               <span className="text-sm text-secondary">Suivez vos artistes favoris facilement</span>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="text-2xl">⚡</div>
+              <LightningIcon className="w-6 h-6 text-amber-500 shrink-0" />
               <span className="text-sm text-secondary">Notifications instantanées des nouvelles sorties</span>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="text-2xl">📊</div>
+              <ChartBarIcon className="w-6 h-6 text-emerald-500 shrink-0" />
               <span className="text-sm text-secondary">Calendrier personnalisé de vos sorties</span>
             </div>
           </div>

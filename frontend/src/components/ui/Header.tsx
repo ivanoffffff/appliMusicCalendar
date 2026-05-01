@@ -4,72 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSpotifyPlayer } from '../../contexts/SpotifyPlayerContext';
-
-// ─── Icônes SVG ──────────────────────────────────────────────────────────────
-const SunIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10A5 5 0 0012 7z" />
-  </svg>
-);
-
-const MoonIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-  </svg>
-);
-
-// ─── Icônes nav mobile ────────────────────────────────────────────────────────
-
-const HomeIcon = ({ filled }: { filled: boolean }) => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-    {filled ? (
-      <path fill="currentColor" d="M10.707 2.293a1 1 0 0 1 1.414 0l7 7A1 1 0 0 1 19 11h-1v9a1 1 0 0 1-1 1h-4v-5h-2v5H7a1 1 0 0 1-1-1v-9H5a1 1 0 0 1-.707-1.707l7-7Z" />
-    ) : (
-      <path stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"
-        d="m3 12 9-9 9 9M5 10v9a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-9" />
-    )}
-  </svg>
-);
-
-const MicIcon = ({ filled }: { filled: boolean }) => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-    {filled ? (
-      <>
-        <rect x="9" y="2" width="6" height="11" rx="3" fill="currentColor" />
-        <path stroke="currentColor" strokeWidth={1.75} strokeLinecap="round"
-          d="M5 10a7 7 0 0 0 14 0M12 19v3M9 22h6" />
-      </>
-    ) : (
-      <>
-        <rect x="9" y="2" width="6" height="11" rx="3" stroke="currentColor" strokeWidth={1.75} />
-        <path stroke="currentColor" strokeWidth={1.75} strokeLinecap="round"
-          d="M5 10a7 7 0 0 0 14 0M12 19v3M9 22h6" />
-      </>
-    )}
-  </svg>
-);
-
-const CalendarIcon = ({ filled }: { filled: boolean }) => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-    {filled ? (
-      <>
-        <rect x="3" y="5" width="18" height="17" rx="2" fill="currentColor" opacity=".2" stroke="currentColor" strokeWidth={1.75} />
-        <path stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" d="M3 10h18M8 3v4M16 3v4" />
-        <rect x="7" y="14" width="3" height="3" rx=".5" fill="currentColor" />
-        <rect x="14" y="14" width="3" height="3" rx=".5" fill="currentColor" />
-      </>
-    ) : (
-      <>
-        <rect x="3" y="5" width="18" height="17" rx="2" stroke="currentColor" strokeWidth={1.75} />
-        <path stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" d="M3 10h18M8 3v4M16 3v4" />
-        <rect x="7" y="14" width="3" height="3" rx=".5" fill="currentColor" />
-        <rect x="14" y="14" width="3" height="3" rx=".5" fill="currentColor" />
-      </>
-    )}
-  </svg>
-);
+import { SunIcon, MoonIcon, HomeIcon, MicrophoneIcon, CalendarIcon } from './Icons';
 
 // ─── Config navigation ────────────────────────────────────────────────────────
 const NAV_DESKTOP = [
@@ -79,9 +14,9 @@ const NAV_DESKTOP = [
 ];
 
 const NAV_MOBILE = [
-  { path: '/dashboard', label: 'Accueil',    Icon: HomeIcon     },
-  { path: '/artists',   label: 'Artistes',   Icon: MicIcon      },
-  { path: '/releases',  label: 'Calendrier', Icon: CalendarIcon },
+  { path: '/dashboard', label: 'Accueil',    Icon: HomeIcon        },
+  { path: '/artists',   label: 'Artistes',   Icon: MicrophoneIcon  },
+  { path: '/releases',  label: 'Calendrier', Icon: CalendarIcon    },
 ];
 
 // ─── Composant ────────────────────────────────────────────────────────────────
@@ -155,13 +90,13 @@ const Header: React.FC = () => {
             {/* ── Actions droite ── */}
             <div className="flex items-center gap-2 shrink-0">
 
-              {/* Bouton thème — SVG sun/moon */}
+              {/* Bouton thème */}
               <button
                 onClick={toggleTheme}
                 className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-slate-800 text-secondary hover:text-primary hover:bg-gray-200 dark:hover:bg-slate-700 transition-all duration-200 hover:scale-105"
                 title={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
               >
-                {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+                {theme === 'dark' ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
               </button>
 
               {/* Nom + avatar */}
@@ -209,7 +144,7 @@ const Header: React.FC = () => {
                   )}
 
                   <span className={`transition-transform duration-200 ${active ? 'scale-110' : ''}`}>
-                    <Icon filled={active} />
+                    <Icon className="w-6 h-6" filled={active} />
                   </span>
                   <span className={`text-[10px] font-semibold tracking-wide leading-none ${
                     active ? 'text-primary-500' : 'text-gray-400 dark:text-slate-500'

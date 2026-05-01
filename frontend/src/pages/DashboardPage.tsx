@@ -9,11 +9,23 @@ import TopArtistCard from '../components/artists/TopArtistCard';
 import GenreDistribution from '../components/stats/GenreDistribution';
 import ProfileBadges from '../components/profile/ProfileBadges';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import {
+  MusicNoteIcon,
+  WaveIcon,
+  MicrophoneIcon,
+  CalendarIcon,
+  TrendingUpIcon,
+  StarIcon,
+  UsersIcon,
+  SparkleIcon,
+  ChartBarIcon,
+  UserIcon,
+} from '../components/ui/Icons';
 
 // ─── Section header réutilisable ───────────────────────────────────────────
-const SectionHeader: React.FC<{ icon: string; title: string }> = ({ icon, title }) => (
+const SectionHeader: React.FC<{ Icon: React.FC<{ className?: string }>; title: string }> = ({ Icon, title }) => (
   <div className="flex items-center gap-3 mb-6">
-    <span className="text-xl">{icon}</span>
+    <Icon className="w-5 h-5 text-primary-500 shrink-0" />
     <h2 className="text-xl font-bold text-primary whitespace-nowrap">{title}</h2>
     <div className="flex-1 h-px bg-gradient-to-r from-gray-200 dark:from-slate-700 to-transparent" />
   </div>
@@ -119,15 +131,15 @@ const DashboardPage: React.FC = () => {
             <div className="animate-entrance">
               <div className="flex items-center gap-2 mb-3">
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-widest uppercase text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full border border-primary-100 dark:border-primary-800/30">
-                  🎵 Music Tracker
+                  <MusicNoteIcon className="w-3.5 h-3.5" /> Music Tracker
                 </span>
               </div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-primary mb-2 leading-tight">
+              <h1 className="text-3xl sm:text-4xl font-bold text-primary mb-2 leading-tight flex items-center gap-2 flex-wrap">
                 Bonjour,{' '}
                 <span className="gradient-text">
                   {user?.firstName || user?.username}
                 </span>{' '}
-                👋
+                <WaveIcon className="w-8 h-8 text-amber-400" />
               </h1>
               <p className="text-secondary text-sm sm:text-base">
                 Votre hub musical personnel
@@ -146,13 +158,13 @@ const DashboardPage: React.FC = () => {
                 onClick={() => navigate('/artists')}
                 className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-primary-300 dark:hover:border-primary-700 hover:-translate-y-0.5 transition-all duration-200 text-sm font-medium text-primary"
               >
-                🎤 <span className="hidden sm:inline">Mes</span> Artistes
+                <MicrophoneIcon className="w-4 h-4" /> <span className="hidden sm:inline">Mes</span> Artistes
               </button>
               <button
                 onClick={() => navigate('/releases')}
                 className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary-500 to-accent-500 hover:from-primary-600 hover:to-accent-600 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 text-sm font-medium text-white"
               >
-                📅 <span className="hidden sm:inline">Voir les</span> Sorties
+                <CalendarIcon className="w-4 h-4" /> <span className="hidden sm:inline">Voir les</span> Sorties
               </button>
             </div>
           </div>
@@ -161,7 +173,7 @@ const DashboardPage: React.FC = () => {
 
       {/* ══════════ STATISTIQUES ══════════ */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-4">
-        <SectionHeader icon="📈" title="Vos Statistiques" />
+        <SectionHeader Icon={TrendingUpIcon} title="Vos Statistiques" />
 
         {isLoading ? (
           <div className="flex justify-center py-12">
@@ -215,7 +227,7 @@ const DashboardPage: React.FC = () => {
       {!isLoading && topArtists.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <div className="flex items-center gap-3 mb-6">
-            <span className="text-xl">🌟</span>
+            <SparkleIcon className="w-5 h-5 text-amber-400 shrink-0" />
             <h2 className="text-xl font-bold text-primary whitespace-nowrap">Vos Top Artistes</h2>
             <div className="flex-1 h-px bg-gradient-to-r from-gray-200 dark:from-slate-700 to-transparent" />
             <button
@@ -246,7 +258,7 @@ const DashboardPage: React.FC = () => {
       {/* ══════════ GENRES ══════════ */}
       {!isLoading && genreDistribution.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <SectionHeader icon="📊" title="Répartition par Genres" />
+          <SectionHeader Icon={ChartBarIcon} title="Répartition par Genres" />
           <GenreDistribution genres={genreDistribution} />
         </div>
       )}
@@ -254,7 +266,7 @@ const DashboardPage: React.FC = () => {
       {/* ══════════ PROFIL ══════════ */}
       {!isLoading && user && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-16">
-          <SectionHeader icon="👤" title="Votre Profil" />
+          <SectionHeader Icon={UserIcon} title="Votre Profil" />
           <ProfileBadges
             totalArtists={stats.totalArtists}
             totalGenres={totalGenres}

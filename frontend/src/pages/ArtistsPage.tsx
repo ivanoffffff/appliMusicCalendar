@@ -4,13 +4,14 @@ import { artistService } from '../services/api';
 import ArtistCard from '../components/artists/ArtistCard';
 import Header from '../components/ui/Header';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { HeartIcon, SearchIcon, MicrophoneIcon, AlertIcon, FrownIcon, MusicNoteIcon } from '../components/ui/Icons';
 
 type Tab = 'favorites' | 'search';
 
 // ─── Pill tab switcher ─────────────────────────────────────────────────────
-const TABS: { id: Tab; emoji: string; label: string }[] = [
-  { id: 'favorites', emoji: '❤️', label: 'Mes favoris' },
-  { id: 'search',    emoji: '🔍', label: 'Rechercher' },
+const TABS: { id: Tab; Icon: React.FC<{ className?: string }>; label: string }[] = [
+  { id: 'favorites', Icon: ({ className }) => <HeartIcon className={className} filled />, label: 'Mes favoris' },
+  { id: 'search',    Icon: SearchIcon, label: 'Rechercher' },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────
@@ -114,7 +115,7 @@ const ArtistsPage: React.FC = () => {
                   : 'text-secondary hover:text-primary hover:bg-gray-100 dark:hover:bg-slate-800'
               }`}
             >
-              <span>{tab.emoji}</span>
+              <tab.Icon className="w-4 h-4" />
               <span>{tab.label}</span>
               {tab.id === 'favorites' && favorites.length > 0 && (
                 <span
@@ -145,7 +146,9 @@ const ArtistsPage: React.FC = () => {
             />
 
             <div className="relative max-w-2xl mx-auto px-4 sm:px-6 py-10 text-center">
-              <div className="text-4xl mb-3 animate-bounce-subtle">🎤</div>
+              <div className="flex justify-center mb-3 animate-bounce-subtle">
+                <MicrophoneIcon className="w-10 h-10 text-primary-500" />
+              </div>
               <h2 className="text-2xl font-bold text-primary mb-1">Découvrez des artistes</h2>
               <p className="text-secondary text-sm mb-7">
                 Recherchez sur Spotify et ajoutez vos favoris en un clic
@@ -193,7 +196,7 @@ const ArtistsPage: React.FC = () => {
 
             {error && (
               <div className="mb-6 flex items-center gap-3 bg-red-50 dark:bg-red-900/15 border border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-entrance">
-                <span>⚠️</span> {error}
+                <AlertIcon className="w-4 h-4 shrink-0" /> {error}
               </div>
             )}
 
@@ -239,7 +242,9 @@ const ArtistsPage: React.FC = () => {
 
             ) : searchQuery && !isSearching ? (
               <div className="text-center py-20">
-                <div className="text-5xl mb-4">😔</div>
+                <div className="flex justify-center mb-4">
+                  <FrownIcon className="w-12 h-12 text-secondary" />
+                </div>
                 <p className="text-primary font-semibold mb-1">Aucun résultat pour « {searchQuery} »</p>
                 <p className="text-secondary text-sm">Essayez avec un autre nom d'artiste</p>
               </div>
@@ -247,7 +252,9 @@ const ArtistsPage: React.FC = () => {
             ) : (
               /* État vide — suggestions */
               <div className="text-center py-16">
-                <div className="text-5xl mb-4 animate-bounce-subtle">🎵</div>
+                <div className="flex justify-center mb-4 animate-bounce-subtle">
+                  <MusicNoteIcon className="w-12 h-12 text-primary-500" />
+                </div>
                 <p className="text-primary font-semibold mb-1">Prêt à explorer ?</p>
                 <p className="text-secondary text-sm mb-6">Tapez le nom d'un artiste dans la barre ci-dessus</p>
                 <div className="flex flex-wrap justify-center gap-2">
@@ -324,8 +331,8 @@ const ArtistsPage: React.FC = () => {
             ) : (
               /* Empty state favoris */
               <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/30 dark:to-accent-900/30 flex items-center justify-center text-5xl mb-6 shadow-card">
-                  🎤
+                <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/30 dark:to-accent-900/30 flex items-center justify-center mb-6 shadow-card">
+                  <MicrophoneIcon className="w-12 h-12 text-primary-500" />
                 </div>
                 <h3 className="text-xl font-bold text-primary mb-2">Aucun artiste favori</h3>
                 <p className="text-secondary text-sm text-center max-w-xs mb-8">
@@ -333,9 +340,10 @@ const ArtistsPage: React.FC = () => {
                 </p>
                 <button
                   onClick={() => setActiveTab('search')}
-                  className="btn-primary px-6 py-3 text-sm"
+                  className="btn-primary px-6 py-3 text-sm flex items-center gap-2"
                 >
-                  🔍 Rechercher des artistes
+                  <SearchIcon className="w-4 h-4" />
+                  Rechercher des artistes
                 </button>
               </div>
             )}

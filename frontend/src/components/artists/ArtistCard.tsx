@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Artist } from '../../types';
 import { SpotifyIcon, DeezerIcon } from '../common/PlatformIcons';
+import { MicrophoneIcon, FireIcon, StarIcon, HeartIcon, UsersIcon } from '../ui/Icons';
 
 interface ArtistCardProps {
   artist: Artist;
@@ -59,8 +60,8 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-6xl">
-            🎤
+          <div className="w-full h-full flex items-center justify-center">
+            <MicrophoneIcon className="w-16 h-16 text-primary-400" />
           </div>
         )}
 
@@ -71,7 +72,10 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
         {artist.popularity > 75 && (
           <div className="absolute top-2.5 left-2.5">
             <span className="flex items-center gap-1 bg-black/50 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-              {artist.popularity > 85 ? '🔥 Tendance' : '⭐ Populaire'}
+              {artist.popularity > 85
+                ? <><FireIcon className="w-3 h-3" /> Tendance</>
+                : <><StarIcon className="w-3 h-3" filled /> Populaire</>
+              }
             </span>
           </div>
         )}
@@ -88,9 +92,12 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
           title={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
         >
           {isLoading ? (
-            <span className="text-xs animate-spin inline-block">⏳</span>
+            <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" strokeOpacity=".25" strokeWidth={2} />
+              <path d="M12 2a10 10 0 0 1 10 10" strokeWidth={2} />
+            </svg>
           ) : (
-            <span className="text-sm">{isFavorite ? '❤️' : '🤍'}</span>
+            <HeartIcon className="w-4 h-4" filled={isFavorite} />
           )}
         </button>
 
@@ -153,7 +160,7 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-secondary">
             <span className="flex items-center gap-1">
-              <span>👥</span>
+              <UsersIcon className="w-3.5 h-3.5" />
               <span className="font-medium text-primary">{formatFollowers(artist.followers)}</span>
               <span>fans</span>
             </span>

@@ -4,6 +4,20 @@ import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/ui/Header';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import SpotifyConnect from '../components/artists/SpotifyConnect';
+import {
+  BellIcon,
+  MailIcon,
+  MusicalNotesIcon,
+  DiscIcon,
+  MusicNoteIcon,
+  VinylIcon,
+  ClockIcon,
+  ChartBarIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  SaveIcon,
+  LogoutIcon,
+} from '../components/ui/Icons';
 
 interface NotificationPreferences {
   emailNotifications: boolean;
@@ -30,8 +44,7 @@ const NotificationSettingsPage: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState('');
-  const [isError, setIsError] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   useEffect(() => {
     loadPreferences();
@@ -57,23 +70,20 @@ const NotificationSettingsPage: React.FC = () => {
   const savePreferences = async () => {
     try {
       setIsSaving(true);
-      setMessage('');
-      
+      setSaveStatus('idle');
+
       const response = await notificationService.updatePreferences(preferences);
-      
+
       if (response.success) {
-        setMessage('✅ Préférences enregistrées avec succès !');
-        setIsError(false);
+        setSaveStatus('success');
       } else {
-        setMessage('❌ Erreur lors de l\'enregistrement');
-        setIsError(true);
+        setSaveStatus('error');
       }
     } catch (error) {
-      setMessage('❌ Erreur lors de l\'enregistrement');
-      setIsError(true);
+      setSaveStatus('error');
     } finally {
       setIsSaving(false);
-      setTimeout(() => setMessage(''), 3000);
+      setTimeout(() => setSaveStatus('idle'), 3000);
     }
   };
 
@@ -93,13 +103,14 @@ const NotificationSettingsPage: React.FC = () => {
       <Header />
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-10 pb-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           {/* En-tête avec info utilisateur et bouton déconnexion */}
           <div className="mb-8">
             <div className="flex items-center justify-center mb-4">
               <div className="text-center">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                  🔔 Paramètres de notification
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center justify-center gap-3">
+                  <BellIcon className="w-7 h-7 text-primary-500" />
+                  Paramètres de notification
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400">
                   Personnalisez comment et quand vous souhaitez recevoir des notifications
@@ -131,25 +142,29 @@ const NotificationSettingsPage: React.FC = () => {
           </div>
 
           {/* Message de confirmation */}
-          {message && (
-            <div className={`mb-6 p-4 rounded-lg ${
-              isError 
+          {saveStatus !== 'idle' && (
+            <div className={`mb-6 p-4 rounded-lg flex items-center gap-2 ${
+              saveStatus === 'error'
                 ? 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800'
                 : 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800'
             }`}>
-              {message}
+              {saveStatus === 'success'
+                ? <><CheckCircleIcon className="w-5 h-5 shrink-0" /> Préférences enregistrées avec succès !</>
+                : <><XCircleIcon className="w-5 h-5 shrink-0" /> Erreur lors de l'enregistrement</>
+              }
             </div>
           )}
 
           {/* Paramètres de notifications */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
             <div className="p-6 space-y-6">
-              
+
               {/* Activation des notifications email */}
               <div className="flex items-center justify-between pb-6 border-b border-gray-200 dark:border-gray-700">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    📧 Notifications par email
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <MailIcon className="w-5 h-5 text-primary-500" />
+                    Notifications par email
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     Recevoir des emails pour les nouvelles sorties
@@ -161,8 +176,8 @@ const NotificationSettingsPage: React.FC = () => {
                     emailNotifications: !prev.emailNotifications
                   }))}
                   className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                    preferences.emailNotifications 
-                      ? 'bg-purple-600' 
+                    preferences.emailNotifications
+                      ? 'bg-purple-600'
                       : 'bg-gray-300 dark:bg-gray-600'
                   }`}
                 >
@@ -176,13 +191,14 @@ const NotificationSettingsPage: React.FC = () => {
 
               {/* Types de sorties */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  🎼 Types de sorties à suivre
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <MusicalNotesIcon className="w-5 h-5 text-primary-500" />
+                  Types de sorties à suivre
                 </h3>
                 <div className="space-y-3">
                   <label className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
                     <div className="flex items-center">
-                      <span className="text-2xl mr-3">💿</span>
+                      <DiscIcon className="w-7 h-7 mr-3 text-purple-500" />
                       <div>
                         <div className="font-medium text-gray-900 dark:text-white">Albums</div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">Nouveaux albums complets</div>
@@ -204,7 +220,7 @@ const NotificationSettingsPage: React.FC = () => {
 
                   <label className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
                     <div className="flex items-center">
-                      <span className="text-2xl mr-3">🎵</span>
+                      <MusicNoteIcon className="w-7 h-7 mr-3 text-emerald-500" />
                       <div>
                         <div className="font-medium text-gray-900 dark:text-white">Singles</div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">Nouveaux singles et morceaux</div>
@@ -226,7 +242,7 @@ const NotificationSettingsPage: React.FC = () => {
 
                   <label className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
                     <div className="flex items-center">
-                      <span className="text-2xl mr-3">📀</span>
+                      <VinylIcon className="w-7 h-7 mr-3 text-blue-500" />
                       <div>
                         <div className="font-medium text-gray-900 dark:text-white">Compilations & EP</div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">EP et compilations</div>
@@ -250,8 +266,9 @@ const NotificationSettingsPage: React.FC = () => {
 
               {/* Fréquence des notifications */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  ⏰ Fréquence des notifications
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <ClockIcon className="w-5 h-5 text-primary-500" />
+                  Fréquence des notifications
                 </h3>
                 <div className="space-y-2">
                   <label className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
@@ -312,8 +329,9 @@ const NotificationSettingsPage: React.FC = () => {
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-base font-medium text-gray-900 dark:text-white">
-                        📊 Résumé hebdomadaire
+                      <h3 className="text-base font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                        <ChartBarIcon className="w-4 h-4 text-primary-500" />
+                        Résumé hebdomadaire
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         Recevoir un récapitulatif chaque semaine en plus des notifications
@@ -325,8 +343,8 @@ const NotificationSettingsPage: React.FC = () => {
                         weeklySummary: !prev.weeklySummary
                       }))}
                       className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                        preferences.weeklySummary 
-                          ? 'bg-purple-600' 
+                        preferences.weeklySummary
+                          ? 'bg-purple-600'
                           : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                     >
@@ -351,15 +369,18 @@ const NotificationSettingsPage: React.FC = () => {
                 <button
                   onClick={savePreferences}
                   disabled={isSaving}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isSaving ? (
                     <>
                       <LoadingSpinner size="sm" />
-                      <span className="ml-2">Enregistrement...</span>
+                      <span>Enregistrement...</span>
                     </>
                   ) : (
-                    '💾 Enregistrer les préférences'
+                    <>
+                      <SaveIcon className="w-4 h-4" />
+                      <span>Enregistrer les préférences</span>
+                    </>
                   )}
                 </button>
               </div>
@@ -372,7 +393,7 @@ const NotificationSettingsPage: React.FC = () => {
             onClick={logout}
             className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center space-x-2"
           >
-            <span>🚪</span>
+            <LogoutIcon className="w-4 h-4" />
             <span>Déconnexion</span>
           </button>
         </div>

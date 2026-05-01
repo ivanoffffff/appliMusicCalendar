@@ -8,6 +8,18 @@ import ReleaseCard from '../components/releases/ReleaseCard';
 import Header from '../components/ui/Header';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useSpotifyPlayer } from '../contexts/SpotifyPlayerContext';
+import {
+  AlertIcon,
+  CalendarIcon,
+  ClockIcon,
+  SparkleIcon,
+  ListIcon,
+  RefreshIcon,
+  PinIcon,
+  SearchIcon,
+  MicrophoneIcon,
+  CheckCircleIcon,
+} from '../components/ui/Icons';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type View   = 'list' | 'calendar';
@@ -175,7 +187,7 @@ const ReleasesPage: React.FC = () => {
           {/* Banner Premium requis */}
           {isPremiumError && (
             <div className="mb-6 flex items-center gap-3 bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-700/40 text-amber-700 dark:text-amber-400 px-4 py-3 rounded-2xl text-sm animate-entrance">
-              <span className="text-lg">⚠️</span>
+              <AlertIcon className="w-5 h-5 shrink-0" />
               <div>
                 <p className="font-semibold">Spotify Premium requis</p>
                 <p className="text-xs opacity-80 mt-0.5">Le lecteur web Spotify nécessite un abonnement Premium. Tu peux toujours ouvrir les titres directement sur Spotify.</p>
@@ -189,7 +201,7 @@ const ReleasesPage: React.FC = () => {
             <div className="animate-entrance">
               <div className="flex items-center gap-2 mb-2">
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-widest uppercase text-accent-600 dark:text-accent-400 bg-accent-50 dark:bg-accent-900/20 px-3 py-1 rounded-full border border-accent-100 dark:border-accent-800/30">
-                  📅 Sorties musicales
+                  <CalendarIcon className="w-3.5 h-3.5" /> Sorties musicales
                 </span>
               </div>
               <h1 className="text-3xl font-bold text-primary mb-1 leading-tight">
@@ -202,12 +214,12 @@ const ReleasesPage: React.FC = () => {
                   </span>
                   {upcomingCount > 0 && (
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2.5 py-1 rounded-full border border-orange-100 dark:border-orange-800/30">
-                      ⏰ {upcomingCount} à venir
+                      <ClockIcon className="w-3 h-3" /> {upcomingCount} à venir
                     </span>
                   )}
                   {newCount > 0 && (
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-800/30">
-                      ✨ {newCount} cette semaine
+                      <SparkleIcon className="w-3 h-3" /> {newCount} cette semaine
                     </span>
                   )}
                 </div>
@@ -240,9 +252,9 @@ const ReleasesPage: React.FC = () => {
               {/* Toggle Vue */}
               <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl">
                 {([
-                  { id: 'list',     emoji: '📋', label: 'Liste' },
-                  { id: 'calendar', emoji: '📅', label: 'Calendrier' },
-                ] as { id: View; emoji: string; label: string }[]).map(v => (
+                  { id: 'list',     Icon: ListIcon,     label: 'Liste' },
+                  { id: 'calendar', Icon: CalendarIcon, label: 'Calendrier' },
+                ] as { id: View; Icon: React.FC<{ className?: string }>; label: string }[]).map(v => (
                   <button
                     key={v.id}
                     onClick={() => setView(v.id)}
@@ -252,7 +264,7 @@ const ReleasesPage: React.FC = () => {
                         : 'text-secondary hover:text-primary'
                     }`}
                   >
-                    <span>{v.emoji}</span>
+                    <v.Icon className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">{v.label}</span>
                   </button>
                 ))}
@@ -262,19 +274,20 @@ const ReleasesPage: React.FC = () => {
               {view === 'list' && (
                 <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl">
                   {([
-                    { id: 'all',      label: 'Toutes' },
-                    { id: 'upcoming', label: '⏰ À venir' },
-                    { id: 'past',     label: '✅ Passées' },
-                  ] as { id: Filter; label: string }[]).map(f => (
+                    { id: 'all',      label: 'Toutes',   icon: null },
+                    { id: 'upcoming', label: 'À venir',  icon: <ClockIcon className="w-3 h-3" /> },
+                    { id: 'past',     label: 'Passées',  icon: <CheckCircleIcon className="w-3 h-3" /> },
+                  ] as { id: Filter; label: string; icon: React.ReactNode }[]).map(f => (
                     <button
                       key={f.id}
                       onClick={() => setFilter(f.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                         filter === f.id
                           ? 'bg-white dark:bg-slate-700 text-primary shadow-sm'
                           : 'text-secondary hover:text-primary'
                       }`}
                     >
+                      {f.icon}
                       {f.label}
                     </button>
                   ))}
@@ -288,7 +301,7 @@ const ReleasesPage: React.FC = () => {
               disabled={isSyncing}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-spotify-500 to-spotify-600 hover:from-spotify-600 hover:to-spotify-700 text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
             >
-              <span className={isSyncing ? 'animate-spin inline-block' : ''}>🔄</span>
+              <RefreshIcon className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">{isSyncing ? 'Sync…' : 'Synchroniser'}</span>
             </button>
           </div>
@@ -303,7 +316,10 @@ const ReleasesPage: React.FC = () => {
               ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400'
               : 'bg-red-50 dark:bg-red-900/15 border border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400'
           }`}>
-            <span>{toast.ok ? '✅' : '⚠️'}</span>
+            {toast.ok
+              ? <CheckCircleIcon className="w-4 h-4 shrink-0" />
+              : <AlertIcon className="w-4 h-4 shrink-0" />
+            }
             {toast.msg}
           </div>
         </div>
@@ -315,19 +331,19 @@ const ReleasesPage: React.FC = () => {
         {/* ── Empty state ── */}
         {releases.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 flex items-center justify-center text-5xl mb-6 shadow-card">
-              📅
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 flex items-center justify-center mb-6 shadow-card">
+              <CalendarIcon className="w-12 h-12 text-primary-500" />
             </div>
             <h2 className="text-xl font-bold text-primary mb-2">Aucune sortie trouvée</h2>
             <p className="text-secondary text-sm text-center max-w-xs mb-8">
               Ajoutez des artistes à vos favoris puis synchronisez pour voir leurs sorties apparaître ici.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <button onClick={() => navigate('/artists')} className="btn-primary px-6 py-2.5 text-sm">
-                🎤 Ajouter des artistes
+              <button onClick={() => navigate('/artists')} className="btn-primary px-6 py-2.5 text-sm flex items-center gap-2">
+                <MicrophoneIcon className="w-4 h-4" /> Ajouter des artistes
               </button>
-              <button onClick={syncReleases} disabled={isSyncing} className="btn-secondary px-6 py-2.5 text-sm disabled:opacity-50">
-                🔄 {isSyncing ? 'Sync…' : 'Synchroniser'}
+              <button onClick={syncReleases} disabled={isSyncing} className="btn-secondary px-6 py-2.5 text-sm disabled:opacity-50 flex items-center gap-2">
+                <RefreshIcon className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} /> {isSyncing ? 'Sync…' : 'Synchroniser'}
               </button>
             </div>
           </div>
@@ -355,7 +371,9 @@ const ReleasesPage: React.FC = () => {
           <>
             {filteredReleases.length === 0 ? (
               <div className="text-center py-12 music-card">
-                <div className="text-4xl mb-3">🔍</div>
+                <div className="flex justify-center mb-3">
+                  <SearchIcon className="w-10 h-10 text-secondary" />
+                </div>
                 <p className="text-secondary text-sm">Aucune sortie pour ce filtre</p>
                 <button onClick={() => setFilter('all')} className="mt-4 text-xs text-primary-500 hover:underline">
                   Voir toutes les sorties
@@ -372,13 +390,13 @@ const ReleasesPage: React.FC = () => {
                     <section key={monthKey}>
                       {/* En-tête de mois */}
                       <div className="flex items-center gap-3 mb-4">
-                        <h2 className={`text-sm font-bold uppercase tracking-wider whitespace-nowrap ${
+                        <h2 className={`flex items-center gap-1.5 text-sm font-bold uppercase tracking-wider whitespace-nowrap ${
                           current ? 'text-primary-500 dark:text-primary-400'
                           : future ? 'text-orange-500 dark:text-orange-400'
                           : 'text-secondary'
                         }`}>
-                          {current && '📍 '}
-                          {future  && '⏰ '}
+                          {current && <PinIcon className="w-3.5 h-3.5" />}
+                          {future  && <ClockIcon className="w-3.5 h-3.5" />}
                           {label}
                         </h2>
                         <span className="text-xs text-secondary bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-full font-medium">
