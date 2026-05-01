@@ -3,6 +3,7 @@ import logo from '../../assets/logo.svg';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useSpotifyPlayer } from '../../contexts/SpotifyPlayerContext';
 
 // ─── Icônes SVG ──────────────────────────────────────────────────────────────
 const SunIcon = () => (
@@ -47,6 +48,9 @@ const Header: React.FC = () => {
   } catch {
     console.warn('ThemeProvider not available');
   }
+
+  const { currentTrack } = useSpotifyPlayer();
+  const hasPlayer = !!currentTrack;
 
   const isActive = (path: string) => location.pathname === path;
   const initials = (user?.firstName?.[0] || user?.username?.[0] || 'U').toUpperCase();
@@ -134,7 +138,8 @@ const Header: React.FC = () => {
       </header>
 
       {/* ══════════ BOTTOM NAV MOBILE ══════════ */}
-      <nav className="md:hidden fixed bottom-4 left-4 right-4 z-50">
+      {/* Remonte au-dessus du MiniPlayer (~68 px) quand le lecteur est actif */}
+      <nav className={`md:hidden fixed left-4 right-4 z-50 transition-all duration-300 ${hasPlayer ? 'bottom-[72px]' : 'bottom-4'}`}>
         <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-gray-200 dark:border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden">
           <div className="grid grid-cols-3 h-16">
             {NAV_MOBILE.map(item => {

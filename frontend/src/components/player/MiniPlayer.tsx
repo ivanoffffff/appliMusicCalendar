@@ -55,8 +55,7 @@ const MiniPlayer: React.FC = () => {
   };
 
   return (
-    // bottom-[5.5rem] sur mobile pour passer au-dessus de la bottom nav
-    <div className="fixed bottom-[5.5rem] md:bottom-0 left-0 right-0 z-50 animate-slide-up">
+    <div className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up">
       {/* Barre de progression — tout en haut du player */}
       <div
         className="h-1 bg-gray-200 dark:bg-slate-700 cursor-pointer group"
