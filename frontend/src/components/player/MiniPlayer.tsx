@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSpotifyPlayer } from '../../contexts/SpotifyPlayerContext';
+import { spotifyAccountService } from '../../services/api';
+import { HeartIcon } from '../ui/Icons';
 
 // ─── Icônes ──────────────────────────────────────────────────────────────────
 
@@ -36,11 +38,62 @@ const fmt = (ms: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
 
+// Extrait l'ID Spotify depuis un URI "spotify:track:XXXXX"
+const trackIdFromUri = (uri: string) => uri.split(':')[2] ?? '';
+
 // ─── Composant ────────────────────────────────────────────────────────────────
 
 const MiniPlayer: React.FC = () => {
   const { currentTrack, isPlaying, positionMs, togglePlay, nextTrack, prevTrack, seekTo } = useSpotifyPlayer();
-  const [volume, setVolume] = useState(70);
+
+  const [isSaved,       setIsSaved]       = useState(false);
+  const [isSaving,      setIsSaving]      = useState(false);
+
+  // Vérifie si le titre est dans la bibliothèque Spotify dès qu'il change
+  useEffect(() => {
+    if (!currentTrack) return;
+    const trackId = trackIdFromUri(currentTrack.uri);
+    if (!trackId) return;
+
+    let cancelled = false;
+    spotifyAccountService.getToken()
+      .then(({ access_token }) =>
+        fetch(`https://api.spotify.com/v1/me/tracks/contains?ids=${trackId}`, {
+          headers: { Authorization: `Bearer ${access_token}` },
+        })
+      )
+      .then(r => r.json())
+      .then((data: boolean[]) => {
+        if (!cancelled) setIsSaved(data[0] ?? false);
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [currentTrack?.uri]);
+
+  const toggleSave = async () => {
+    if (!currentTrack || isSaving) return;
+    const trackId = trackIdFromUri(currentTrack.uri);
+    if (!trackId) return;
+
+    setIsSaving(true);
+    try {
+      const { access_token } = await spotifyAccountService.getToken();
+      await fetch(`https://api.spotify.com/v1/me/tracks`, {
+        method:  isSaved ? 'DELETE' : 'PUT',
+        headers: {
+          Authorization:  `Bearer ${access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids: [trackId] }),
+      });
+      setIsSaved(prev => !prev);
+    } catch {
+      // silencieux
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (!currentTrack) return null;
 
@@ -56,7 +109,7 @@ const MiniPlayer: React.FC = () => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up">
-      {/* Barre de progression — tout en haut du player */}
+      {/* Barre de progression */}
       <div
         className="h-1 bg-gray-200 dark:bg-slate-700 cursor-pointer group"
         onClick={handleSeek}
@@ -92,7 +145,22 @@ const MiniPlayer: React.FC = () => {
           </div>
 
           {/* ── Contrôles ── */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
+
+            {/* Bouton favori Spotify */}
+            <button
+              onClick={toggleSave}
+              disabled={isSaving}
+              title={isSaved ? 'Retirer des favoris Spotify' : 'Ajouter aux favoris Spotify'}
+              className={`p-2 rounded-xl transition-all duration-200 disabled:opacity-50 ${
+                isSaved
+                  ? 'text-[#1db954] hover:bg-green-50 dark:hover:bg-green-900/20'
+                  : 'text-secondary hover:text-primary hover:bg-gray-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <HeartIcon className="w-4 h-4" filled={isSaved} />
+            </button>
+
             <button
               onClick={prevTrack}
               className="p-2 text-secondary hover:text-primary hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all duration-200"
