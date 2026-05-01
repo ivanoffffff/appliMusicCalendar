@@ -34,13 +34,15 @@ interface SpotifyFollowedArtistsResponse {
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 class SpotifyUserService {
-  private readonly CLIENT_ID     = process.env.SPOTIFY_CLIENT_ID!;
-  private readonly CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET!;
-  private readonly REDIRECT_URI  = process.env.SPOTIFY_REDIRECT_URI!;
-  private readonly AUTH_URL      = 'https://accounts.spotify.com/authorize';
-  private readonly TOKEN_URL     = 'https://accounts.spotify.com/api/token';
-  private readonly API_URL       = 'https://api.spotify.com/v1';
-  private readonly SCOPES        = 'user-follow-read';
+  private readonly AUTH_URL = 'https://accounts.spotify.com/authorize';
+  private readonly TOKEN_URL = 'https://accounts.spotify.com/api/token';
+  private readonly API_URL   = 'https://api.spotify.com/v1';
+  private readonly SCOPES    = 'user-follow-read';
+
+  // Lus à l'appel (pas à l'instanciation) pour que dotenv soit déjà chargé
+  private get CLIENT_ID()     { return process.env.SPOTIFY_CLIENT_ID!; }
+  private get CLIENT_SECRET() { return process.env.SPOTIFY_CLIENT_SECRET!; }
+  private get REDIRECT_URI()  { return process.env.SPOTIFY_REDIRECT_URI!; }
 
   // ── Génère l'URL de consentement Spotify ─────────────────────────────────
   getAuthorizationUrl(state: string): string {
