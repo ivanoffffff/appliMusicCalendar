@@ -44,6 +44,8 @@ class SpotifyUserService {
     'user-read-private',
     'user-modify-playback-state',
     'user-read-playback-state',
+    'user-library-modify',
+    'user-library-read',
   ].join(' ');
 
   // Lus à l'appel (pas à l'instanciation) pour que dotenv soit déjà chargé
