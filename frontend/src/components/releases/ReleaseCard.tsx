@@ -41,7 +41,7 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({
   const { Icon: TypeIcon } = config;
 
   const formatDate = (ds: string) =>
-    new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(ds));
+    new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long' }).format(new Date(ds));
 
   const releaseDate = new Date(release.releaseDate);
   const now         = new Date();
