@@ -114,9 +114,10 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
   // ── Flag auto-play : Spotify peut démarrer en pause la 1ère fois ─────────
   const pendingAutoPlayRef = useRef(false);
 
-  // ── Détection fin d'album ─────────────────────────────────────────────────
-  // Vrai quand la piste en cours est la dernière de l'album (next_tracks vide)
-  const wasOnLastTrackRef = useRef(false);
+  // ── Watchdog fin d'album ──────────────────────────────────────────────────
+  // Timer armé sur la dernière piste de chaque album. À l'expiration, on vérifie
+  // si le player est en pause → l'album est terminé → on avance dans la file.
+  const albumEndTimerRef = useRef<number>(0);
 
   // ── Vérifier si Spotify est connecté ──────────────────────────────────────
   useEffect(() => {
@@ -175,27 +176,27 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
-      // ── Détection fin d'album → avancer dans la file ──────────────────────
-      // Spotify remet position=0 et repasse en pause quand l'album se termine.
-      // On le détecte grâce au flag wasOnLastTrackRef (dernière piste = next_tracks vide).
-      if (state.paused && state.position === 0 && wasOnLastTrackRef.current) {
-        wasOnLastTrackRef.current = false;
-        const queue = queueRef.current;
-        const idx   = queueIndexRef.current;
-        if (idx >= 0 && idx < queue.length - 1) {
-          const nextIdx = idx + 1;
-          queueIndexRef.current = nextIdx;
-          // fire-and-forget : pas d'await dans un listener
-          startPlaybackRef.current?.(queue[nextIdx]);
-          return;
-        }
-        // Fin de la file : on laisse le player en pause
-        return;
-      }
+      // ── Watchdog fin d'album : annuler le timer à chaque changement d'état ──
+      clearTimeout(albumEndTimerRef.current);
 
-      // ── Mémoriser si on est sur la dernière piste de l'album ──────────────
-      if (!state.paused) {
-        wasOnLastTrackRef.current = state.track_window.next_tracks.length === 0;
+      // ── Si on joue la dernière piste, armer le watchdog ───────────────────
+      const isLastTrack = !state.paused && state.track_window.next_tracks.length === 0;
+      if (isLastTrack) {
+        const remaining = state.duration - state.position;
+        // +1 500 ms de marge pour laisser Spotify traiter la fin
+        albumEndTimerRef.current = window.setTimeout(async () => {
+          const s = await playerRef.current?.getCurrentState();
+          // Si paused (ou player disparu), l'album est fini → avancer dans la file
+          if (!s || s.paused) {
+            const queue = queueRef.current;
+            const idx   = queueIndexRef.current;
+            if (idx >= 0 && idx < queue.length - 1) {
+              const nextIdx = idx + 1;
+              queueIndexRef.current = nextIdx;
+              startPlaybackRef.current?.(queue[nextIdx]);
+            }
+          }
+        }, remaining + 1500);
       }
 
       const track = state.track_window.current_track;
@@ -238,6 +239,7 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return () => {
       clearInterval(positionIntervalRef.current);
+      clearTimeout(albumEndTimerRef.current);
       player.disconnect();
       playerRef.current = null;
     };
@@ -293,8 +295,6 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [isReady, startPlayback]);
 
   // ── ⏭ Piste suivante dans l'album (SDK natif) ────────────────────────────
-  // L'avancement vers la sortie suivante se fait automatiquement à la fin de
-  // la dernière piste via la détection wasOnLastTrackRef dans le listener.
   const nextTrack = useCallback(async () => {
     await playerRef.current?.nextTrack();
   }, []);
