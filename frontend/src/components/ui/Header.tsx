@@ -20,6 +20,57 @@ const MoonIcon = () => (
   </svg>
 );
 
+// ─── Icônes nav mobile ────────────────────────────────────────────────────────
+
+const HomeIcon = ({ filled }: { filled: boolean }) => (
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+    {filled ? (
+      <path fill="currentColor" d="M10.707 2.293a1 1 0 0 1 1.414 0l7 7A1 1 0 0 1 19 11h-1v9a1 1 0 0 1-1 1h-4v-5h-2v5H7a1 1 0 0 1-1-1v-9H5a1 1 0 0 1-.707-1.707l7-7Z" />
+    ) : (
+      <path stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"
+        d="m3 12 9-9 9 9M5 10v9a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-9" />
+    )}
+  </svg>
+);
+
+const MicIcon = ({ filled }: { filled: boolean }) => (
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+    {filled ? (
+      <>
+        <rect x="9" y="2" width="6" height="11" rx="3" fill="currentColor" />
+        <path stroke="currentColor" strokeWidth={1.75} strokeLinecap="round"
+          d="M5 10a7 7 0 0 0 14 0M12 19v3M9 22h6" />
+      </>
+    ) : (
+      <>
+        <rect x="9" y="2" width="6" height="11" rx="3" stroke="currentColor" strokeWidth={1.75} />
+        <path stroke="currentColor" strokeWidth={1.75} strokeLinecap="round"
+          d="M5 10a7 7 0 0 0 14 0M12 19v3M9 22h6" />
+      </>
+    )}
+  </svg>
+);
+
+const CalendarIcon = ({ filled }: { filled: boolean }) => (
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+    {filled ? (
+      <>
+        <rect x="3" y="5" width="18" height="17" rx="2" fill="currentColor" opacity=".2" stroke="currentColor" strokeWidth={1.75} />
+        <path stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" d="M3 10h18M8 3v4M16 3v4" />
+        <rect x="7" y="14" width="3" height="3" rx=".5" fill="currentColor" />
+        <rect x="14" y="14" width="3" height="3" rx=".5" fill="currentColor" />
+      </>
+    ) : (
+      <>
+        <rect x="3" y="5" width="18" height="17" rx="2" stroke="currentColor" strokeWidth={1.75} />
+        <path stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" d="M3 10h18M8 3v4M16 3v4" />
+        <rect x="7" y="14" width="3" height="3" rx=".5" fill="currentColor" />
+        <rect x="14" y="14" width="3" height="3" rx=".5" fill="currentColor" />
+      </>
+    )}
+  </svg>
+);
+
 // ─── Config navigation ────────────────────────────────────────────────────────
 const NAV_DESKTOP = [
   { path: '/dashboard', label: 'Dashboard' },
@@ -28,9 +79,9 @@ const NAV_DESKTOP = [
 ];
 
 const NAV_MOBILE = [
-  { path: '/dashboard', label: 'Accueil',    emoji: '🏠' },
-  { path: '/artists',   label: 'Artistes',   emoji: '🎤' },
-  { path: '/releases',  label: 'Calendrier', emoji: '📅' },
+  { path: '/dashboard', label: 'Accueil',    Icon: HomeIcon     },
+  { path: '/artists',   label: 'Artistes',   Icon: MicIcon      },
+  { path: '/releases',  label: 'Calendrier', Icon: CalendarIcon },
 ];
 
 // ─── Composant ────────────────────────────────────────────────────────────────
@@ -142,26 +193,28 @@ const Header: React.FC = () => {
       <nav className={`md:hidden fixed left-4 right-4 z-50 transition-all duration-300 ${hasPlayer ? 'bottom-[72px]' : 'bottom-4'}`}>
         <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-gray-200 dark:border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden">
           <div className="grid grid-cols-3 h-16">
-            {NAV_MOBILE.map(item => {
-              const active = isActive(item.path);
+            {NAV_MOBILE.map(({ path, label, Icon }) => {
+              const active = isActive(path);
               return (
                 <button
-                  key={item.path}
-                  onClick={() => navigate(item.path)}
-                  className={`relative flex flex-col items-center justify-center gap-0.5 transition-all duration-200 ${
-                    active ? 'text-primary-500' : 'text-secondary hover:text-primary'
+                  key={path}
+                  onClick={() => navigate(path)}
+                  className={`relative flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
+                    active ? 'text-primary-500' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
                   }`}
                 >
-                  {/* Barre indicatrice en haut */}
+                  {/* Pill indicatrice en haut */}
                   {active && (
-                    <span className="absolute top-0 left-4 right-4 h-[2px] rounded-full bg-gradient-to-r from-primary-500 to-accent-500" />
+                    <span className="absolute top-0 left-6 right-6 h-[2.5px] rounded-full bg-gradient-to-r from-primary-500 to-accent-500" />
                   )}
 
-                  <span className={`text-xl transition-transform duration-200 ${active ? 'scale-110' : ''}`}>
-                    {item.emoji}
+                  <span className={`transition-transform duration-200 ${active ? 'scale-110' : ''}`}>
+                    <Icon filled={active} />
                   </span>
-                  <span className={`text-[10px] font-semibold tracking-wide ${active ? 'text-primary-500' : ''}`}>
-                    {item.label}
+                  <span className={`text-[10px] font-semibold tracking-wide leading-none ${
+                    active ? 'text-primary-500' : 'text-gray-400 dark:text-slate-500'
+                  }`}>
+                    {label}
                   </span>
                 </button>
               );
