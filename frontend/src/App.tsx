@@ -7,7 +7,8 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ArtistsPage from './pages/ArtistsPage';
 import ReleasesPage from './pages/ReleasesPage';
-import NotificationSettingsPage from './pages/NotificationSettingsPage'; // 🆕 NOUVEAU
+import NotificationSettingsPage from './pages/NotificationSettingsPage';
+import SpotifyCallbackPage from './pages/SpotifyCallbackPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 // Composant pour protéger les routes privées
@@ -95,6 +96,8 @@ function AppContent() {
           </PrivateRoute>
         } 
       />
+      {/* Callback OAuth Spotify — pas de PrivateRoute car la page gère son propre état */}
+      <Route path="/spotify-callback" element={<SpotifyCallbackPage />} />
       <Route path="/" element={<Navigate to="/dashboard" />} />
     </Routes>
   );

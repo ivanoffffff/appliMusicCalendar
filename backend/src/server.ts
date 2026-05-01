@@ -5,8 +5,9 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import artistRoutes from './routes/artists';
 import releaseRoutes from './routes/releases';
-import notificationRoutes from './routes/notificationRoutes';  // 🆕 AJOUT
-import cronService from './services/cronService';  // 🆕 AJOUT
+import notificationRoutes from './routes/notificationRoutes';
+import spotifyRoutes from './routes/spotify';
+import cronService from './services/cronService';
 
 dotenv.config();
 
@@ -58,8 +59,8 @@ app.use('/api/artists', artistRoutes);
 // Routes pour les sorties musicales
 app.use('/api/releases', releaseRoutes);
 
-// 🆕 NOUVEAU : Routes pour les notifications
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/spotify', spotifyRoutes);
 
 // Gestion des erreurs globales
 app.use((err: any, req: any, res: any, next: any) => {

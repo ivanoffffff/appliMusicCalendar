@@ -128,4 +128,35 @@ export const notificationService = {
   },
 };
 
+// ── Service Spotify compte utilisateur ──────────────────────────────────────
+export const spotifyAccountService = {
+  /** Récupère l'URL OAuth Spotify à ouvrir */
+  async getAuthUrl(): Promise<{ url: string }> {
+    const response = await api.get<{ success: boolean; url: string }>('/spotify/auth-url');
+    return response.data;
+  },
+
+  /** Vérifie si l'utilisateur a connecté son compte Spotify */
+  async getStatus(): Promise<{ connected: boolean }> {
+    const response = await api.get<{ success: boolean; connected: boolean }>('/spotify/status');
+    return response.data;
+  },
+
+  /** Importe les artistes suivis sur Spotify en favoris */
+  async importFollowing(): Promise<{ imported: number; skipped: number; total: number }> {
+    const response = await api.post<{
+      success: boolean;
+      imported: number;
+      skipped: number;
+      total: number;
+    }>('/spotify/import-following');
+    return response.data;
+  },
+
+  /** Déconnecte le compte Spotify */
+  async disconnect(): Promise<void> {
+    await api.delete('/spotify/disconnect');
+  },
+};
+
 export default api;
