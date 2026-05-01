@@ -142,6 +142,22 @@ router.post('/import-following', authenticateToken, async (req: Request, res: Re
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /api/spotify/token
+// Renvoie un access token valide (rafraîchi si nécessaire) pour le SDK frontend.
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/token', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const accessToken = await spotifyUserService.getValidAccessToken(req.user!.userId);
+    res.json({ success: true, access_token: accessToken });
+  } catch (err: any) {
+    if (err.message === 'Compte Spotify non connecté') {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DELETE /api/spotify/disconnect
 // Supprime le token Spotify de l'utilisateur.
 // ─────────────────────────────────────────────────────────────────────────────

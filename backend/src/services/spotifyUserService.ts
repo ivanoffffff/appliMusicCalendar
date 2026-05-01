@@ -37,7 +37,14 @@ class SpotifyUserService {
   private readonly AUTH_URL = 'https://accounts.spotify.com/authorize';
   private readonly TOKEN_URL = 'https://accounts.spotify.com/api/token';
   private readonly API_URL   = 'https://api.spotify.com/v1';
-  private readonly SCOPES    = 'user-follow-read';
+  private readonly SCOPES = [
+    'user-follow-read',
+    'streaming',
+    'user-read-email',
+    'user-read-private',
+    'user-modify-playback-state',
+    'user-read-playback-state',
+  ].join(' ');
 
   // Lus à l'appel (pas à l'instanciation) pour que dotenv soit déjà chargé
   private get CLIENT_ID()     { return process.env.SPOTIFY_CLIENT_ID!; }

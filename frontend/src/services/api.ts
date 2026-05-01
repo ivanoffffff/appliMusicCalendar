@@ -153,6 +153,12 @@ export const spotifyAccountService = {
     return response.data;
   },
 
+  /** Renvoie un access token valide pour le Web Playback SDK */
+  async getToken(): Promise<{ access_token: string }> {
+    const response = await api.get<{ success: boolean; access_token: string }>('/spotify/token');
+    return response.data;
+  },
+
   /** Déconnecte le compte Spotify */
   async disconnect(): Promise<void> {
     await api.delete('/spotify/disconnect');

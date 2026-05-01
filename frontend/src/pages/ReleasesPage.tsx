@@ -7,6 +7,7 @@ import { releaseService } from '../services/api';
 import ReleaseCard from '../components/releases/ReleaseCard';
 import Header from '../components/ui/Header';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { useSpotifyPlayer } from '../contexts/SpotifyPlayerContext';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type View   = 'list' | 'calendar';
@@ -59,6 +60,12 @@ const ReleasesPage: React.FC = () => {
   const [selectedRelease,  setSelectedRelease]  = useState<Release | null>(null);
   const [view,             setView]             = useState<View>('list');
   const [filter,           setFilter]           = useState<Filter>('all');
+
+  const { isReady, playAlbum, currentTrack, isPlaying, isPremiumError } = useSpotifyPlayer();
+
+  const handlePlay = (spotifyId: string) => {
+    if (isReady) playAlbum(spotifyId);
+  };
 
   // ── Stats rapides ──────────────────────────────────────────────────────
   const now = new Date();
@@ -158,6 +165,18 @@ const ReleasesPage: React.FC = () => {
         />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+
+          {/* Banner Premium requis */}
+          {isPremiumError && (
+            <div className="mb-6 flex items-center gap-3 bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-700/40 text-amber-700 dark:text-amber-400 px-4 py-3 rounded-2xl text-sm animate-entrance">
+              <span className="text-lg">⚠️</span>
+              <div>
+                <p className="font-semibold">Spotify Premium requis</p>
+                <p className="text-xs opacity-80 mt-0.5">Le lecteur web Spotify nécessite un abonnement Premium. Tu peux toujours ouvrir les titres directement sur Spotify.</p>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
 
             {/* Texte + quick stats */}
@@ -372,7 +391,11 @@ const ReleasesPage: React.FC = () => {
                               className="animate-entrance"
                               style={{ animationDelay: `${Math.min(i, 6) * 50}ms` }}
                             >
-                              <ReleaseCard release={release} />
+                              <ReleaseCard
+                                release={release}
+                                onPlay={isReady ? handlePlay : undefined}
+                                isPlaying={isPlaying && currentTrack?.uri === `spotify:track:${release.spotifyId}` || isPlaying && currentTrack?.albumName === release.name}
+                              />
                             </div>
                           ))}
                       </div>
@@ -412,7 +435,11 @@ const ReleasesPage: React.FC = () => {
               </button>
             </div>
 
-            <ReleaseCard release={selectedRelease} />
+            <ReleaseCard
+              release={selectedRelease}
+              onPlay={isReady ? handlePlay : undefined}
+              isPlaying={isPlaying && currentTrack?.albumName === selectedRelease.name}
+            />
           </div>
         </div>
       )}

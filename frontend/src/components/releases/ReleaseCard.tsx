@@ -3,8 +3,10 @@ import type { Release } from '../../types';
 import { SpotifyIcon, DeezerIcon } from '../common/PlatformIcons';
 
 interface ReleaseCardProps {
-  release: Release;
-  compact?: boolean;
+  release:    Release;
+  compact?:   boolean;
+  onPlay?:    (spotifyId: string) => void;
+  isPlaying?: boolean;
 }
 
 const TYPE_CONFIG: Record<string, { label: string; emoji: string; color: string; badgeCls: string }> = {
@@ -15,7 +17,21 @@ const TYPE_CONFIG: Record<string, { label: string; emoji: string; color: string;
 
 const FALLBACK_CONFIG = { label: 'Sortie', emoji: '🎵', color: '#6b7280', badgeCls: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' };
 
-const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, compact = false }) => {
+// Icône play/pause inline
+const PlayPauseIcon: React.FC<{ playing: boolean }> = ({ playing }) =>
+  playing ? (
+    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+    </svg>
+  ) : (
+    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  );
+
+const ReleaseCard: React.FC<ReleaseCardProps> = ({
+  release, compact = false, onPlay, isPlaying = false,
+}) => {
   const [imageError, setImageError] = useState(false);
 
   const config = TYPE_CONFIG[release.releaseType] ?? FALLBACK_CONFIG;
@@ -29,22 +45,54 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, compact = false }) =
   const isUpcoming  = releaseDate > now;
   const daysDiff    = Math.ceil((releaseDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
+  // Lecture possible si Spotify connecté (onPlay fourni) et id présent
+  const canPlay = !!onPlay && !!release.spotifyId && !isUpcoming;
+
+  const handleCoverClick = () => {
+    if (canPlay) onPlay!(release.spotifyId!);
+  };
+
   return (
     <div
-      className={`group relative flex items-center gap-4 bg-white dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700/50 border-l-4 rounded-2xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 animate-entrance ${compact ? 'p-3' : 'p-4'}`}
-      style={{ borderLeftColor: config.color }}
+      className={`group relative flex items-center gap-4 bg-white dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700/50 border-l-4 rounded-2xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 animate-entrance ${compact ? 'p-3' : 'p-4'} ${isPlaying ? 'ring-2 ring-[#1db954]/40' : ''}`}
+      style={{ borderLeftColor: isPlaying ? '#1db954' : config.color }}
     >
-      {/* ── Image ── */}
-      <div className={`shrink-0 rounded-xl overflow-hidden bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/40 dark:to-accent-900/40 shadow-md group-hover:shadow-lg transition-shadow duration-300 ${compact ? 'w-14 h-14' : 'w-20 h-20'}`}>
+      {/* ── Pochette (cliquable si lecteur dispo) ── */}
+      <div
+        className={`relative shrink-0 rounded-xl overflow-hidden bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/40 dark:to-accent-900/40 shadow-md transition-all duration-300 ${compact ? 'w-14 h-14' : 'w-20 h-20'} ${canPlay ? 'cursor-pointer' : ''}`}
+        onClick={handleCoverClick}
+      >
         {release.imageUrl && !imageError ? (
           <img
             src={release.imageUrl}
             alt={release.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            className={`w-full h-full object-cover transition-transform duration-500 ${canPlay ? 'group-hover:scale-110' : 'group-hover:scale-110'}`}
             onError={() => setImageError(true)}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-3xl">🎵</div>
+        )}
+
+        {/* Overlay play/pause au survol */}
+        {canPlay && (
+          <div className={`absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity duration-200 ${isPlaying ? 'opacity-100' : 'opacity-0 hover:opacity-100'}`}>
+            <div className="text-white drop-shadow-lg">
+              <PlayPauseIcon playing={isPlaying} />
+            </div>
+          </div>
+        )}
+
+        {/* Indicateur "en lecture" */}
+        {isPlaying && (
+          <div className="absolute bottom-1 right-1 flex gap-px items-end h-3">
+            {[1, 2, 3].map(i => (
+              <div
+                key={i}
+                className="w-1 bg-[#1db954] rounded-sm animate-bar-fill"
+                style={{ animationDelay: `${i * 0.15}s`, height: `${40 + i * 20}%` }}
+              />
+            ))}
+          </div>
         )}
       </div>
 
@@ -53,7 +101,7 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, compact = false }) =
         {/* Titre + badge temporel */}
         <div className="flex items-start justify-between gap-2 mb-1">
           <div className="min-w-0">
-            <h3 className={`font-bold text-primary truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors ${compact ? 'text-sm' : 'text-base'}`}>
+            <h3 className={`font-bold truncate transition-colors ${compact ? 'text-sm' : 'text-base'} ${isPlaying ? 'text-[#1db954]' : 'text-primary group-hover:text-primary-600 dark:group-hover:text-primary-400'}`}>
               {release.name}
             </h3>
             <p className="text-xs text-secondary truncate mt-0.5">{release.artist.name}</p>
@@ -90,7 +138,16 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, compact = false }) =
         {/* Liens */}
         {!compact && (
           <div className="flex items-center gap-2">
-            {release.spotifyUrl && (
+            {canPlay && (
+              <button
+                onClick={handleCoverClick}
+                className="inline-flex items-center gap-1.5 bg-[#1db954] hover:bg-[#17a349] text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 shadow-sm hover:shadow-md"
+              >
+                <PlayPauseIcon playing={isPlaying} />
+                <span>{isPlaying ? 'En lecture' : 'Écouter'}</span>
+              </button>
+            )}
+            {!canPlay && release.spotifyUrl && (
               <a
                 href={release.spotifyUrl}
                 target="_blank"
@@ -99,7 +156,7 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, compact = false }) =
                 title={isUpcoming ? 'Pré-enregistrer sur Spotify' : 'Écouter sur Spotify'}
               >
                 <SpotifyIcon className="w-3.5 h-3.5" />
-                <span>{isUpcoming ? 'Pré-save' : 'Écouter'}</span>
+                <span>{isUpcoming ? 'Pré-save' : 'Spotify'}</span>
               </a>
             )}
             {release.deezerUrl && (
