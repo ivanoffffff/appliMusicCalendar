@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { Artist, FavoriteArtist } from '../types';
 import { artistService } from '../services/api';
 import ArtistCard from '../components/artists/ArtistCard';
-import SpotifyConnect from '../components/artists/SpotifyConnect';
 import Header from '../components/ui/Header';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
@@ -275,11 +274,6 @@ const ArtistsPage: React.FC = () => {
       {activeTab === 'favorites' && (
         <div className="animate-entrance">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24 md:pb-10">
-
-            {/* Connexion Spotify */}
-            <div className="mb-6">
-              <SpotifyConnect />
-            </div>
 
             {isLoadingFavorites ? (
               <div className="flex flex-col items-center justify-center py-20">

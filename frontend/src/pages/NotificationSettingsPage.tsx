@@ -3,6 +3,7 @@ import { notificationService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/ui/Header';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import SpotifyConnect from '../components/artists/SpotifyConnect';
 
 interface NotificationPreferences {
   emailNotifications: boolean;
@@ -122,6 +123,11 @@ const NotificationSettingsPage: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Connexion Spotify */}
+          <div className="mb-8">
+            <SpotifyConnect />
           </div>
 
           {/* Message de confirmation */}
