@@ -23,11 +23,11 @@ const FALLBACK_CONFIG: TypeConfig = { label: 'Sortie', Icon: MusicNoteIcon, colo
 // Icône play/pause inline
 const PlayPauseIcon: React.FC<{ playing: boolean }> = ({ playing }) =>
   playing ? (
-    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
       <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
     </svg>
   ) : (
-    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
       <path d="M8 5v14l11-7z"/>
     </svg>
   );
