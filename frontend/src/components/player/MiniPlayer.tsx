@@ -38,7 +38,7 @@ const fmt = (ms: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
 
-// Extrait l'ID Spotify depuis un URI "spotify:track:XXXXX"
+// Extrait l'ID depuis un URI "spotify:track:XXXXX" (pour l'endpoint contains)
 const trackIdFromUri = (uri: string) => uri.split(':')[2] ?? '';
 
 // ─── Composant ────────────────────────────────────────────────────────────────
@@ -46,8 +46,8 @@ const trackIdFromUri = (uri: string) => uri.split(':')[2] ?? '';
 const MiniPlayer: React.FC = () => {
   const { currentTrack, isPlaying, positionMs, togglePlay, nextTrack, prevTrack, seekTo } = useSpotifyPlayer();
 
-  const [isSaved,       setIsSaved]       = useState(false);
-  const [isSaving,      setIsSaving]      = useState(false);
+  const [isSaved,  setIsSaved]  = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Vérifie si le titre est dans la bibliothèque Spotify dès qu'il change
   useEffect(() => {
@@ -73,20 +73,18 @@ const MiniPlayer: React.FC = () => {
 
   const toggleSave = async () => {
     if (!currentTrack || isSaving) return;
-    const trackId = trackIdFromUri(currentTrack.uri);
-    if (!trackId) return;
 
     setIsSaving(true);
     try {
       const { access_token } = await spotifyAccountService.getToken();
-      await fetch(`https://api.spotify.com/v1/me/tracks`, {
-        method:  isSaved ? 'DELETE' : 'PUT',
-        headers: {
-          Authorization:  `Bearer ${access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ids: [trackId] }),
-      });
+      // PUT /me/library accepte directement l'URI Spotify
+      await fetch(
+        `https://api.spotify.com/v1/me/library?uris=${encodeURIComponent(currentTrack.uri)}`,
+        {
+          method:  isSaved ? 'DELETE' : 'PUT',
+          headers: { Authorization: `Bearer ${access_token}` },
+        }
+      );
       setIsSaved(prev => !prev);
     } catch {
       // silencieux
