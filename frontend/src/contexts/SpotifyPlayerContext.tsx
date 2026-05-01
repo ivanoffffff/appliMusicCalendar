@@ -21,7 +21,11 @@ interface WebPlaybackState {
   paused:       boolean;
   position:     number;
   duration:     number;
-  track_window: { current_track: WebPlaybackTrack };
+  track_window: {
+    current_track:   WebPlaybackTrack;
+    next_tracks:     WebPlaybackTrack[];
+    previous_tracks: WebPlaybackTrack[];
+  };
 }
 
 declare global {
@@ -104,8 +108,15 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
   const queueRef      = useRef<string[]>([]);   // spotifyAlbumIds dans l'ordre affiché
   const queueIndexRef = useRef<number>(-1);
 
-  // ── Flag pour auto-play : Spotify peut démarrer en pause la 1ère fois ────
+  // ── Ref vers startPlayback pour l'utiliser dans les listeners ────────────
+  const startPlaybackRef = useRef<((id: string) => Promise<void>) | null>(null);
+
+  // ── Flag auto-play : Spotify peut démarrer en pause la 1ère fois ─────────
   const pendingAutoPlayRef = useRef(false);
+
+  // ── Détection fin d'album ─────────────────────────────────────────────────
+  // Vrai quand la piste en cours est la dernière de l'album (next_tracks vide)
+  const wasOnLastTrackRef = useRef(false);
 
   // ── Vérifier si Spotify est connecté ──────────────────────────────────────
   useEffect(() => {
@@ -162,6 +173,29 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
           player.togglePlay();
           return; // attendre le prochain événement d'état
         }
+      }
+
+      // ── Détection fin d'album → avancer dans la file ──────────────────────
+      // Spotify remet position=0 et repasse en pause quand l'album se termine.
+      // On le détecte grâce au flag wasOnLastTrackRef (dernière piste = next_tracks vide).
+      if (state.paused && state.position === 0 && wasOnLastTrackRef.current) {
+        wasOnLastTrackRef.current = false;
+        const queue = queueRef.current;
+        const idx   = queueIndexRef.current;
+        if (idx >= 0 && idx < queue.length - 1) {
+          const nextIdx = idx + 1;
+          queueIndexRef.current = nextIdx;
+          // fire-and-forget : pas d'await dans un listener
+          startPlaybackRef.current?.(queue[nextIdx]);
+          return;
+        }
+        // Fin de la file : on laisse le player en pause
+        return;
+      }
+
+      // ── Mémoriser si on est sur la dernière piste de l'album ──────────────
+      if (!state.paused) {
+        wasOnLastTrackRef.current = state.track_window.next_tracks.length === 0;
       }
 
       const track = state.track_window.current_track;
@@ -235,6 +269,11 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
     setCurrentAlbumId(spotifyAlbumId);
   }, []);
 
+  // Garder startPlaybackRef à jour pour les listeners (qui capturent la ref, pas la valeur)
+  useEffect(() => {
+    startPlaybackRef.current = startPlayback;
+  }, [startPlayback]);
+
   // ── playAlbum : point d'entrée public, accepte une queue optionnelle ──────
   const playAlbum = useCallback(async (
     spotifyAlbumId: string,
@@ -253,42 +292,17 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [isReady, startPlayback]);
 
-  // ── Piste suivante : sortie suivante dans la file d'affichage ─────────────
+  // ── ⏭ Piste suivante dans l'album (SDK natif) ────────────────────────────
+  // L'avancement vers la sortie suivante se fait automatiquement à la fin de
+  // la dernière piste via la détection wasOnLastTrackRef dans le listener.
   const nextTrack = useCallback(async () => {
-    const queue = queueRef.current;
-    const idx   = queueIndexRef.current;
+    await playerRef.current?.nextTrack();
+  }, []);
 
-    if (queue.length > 0 && idx < queue.length - 1) {
-      const nextIdx = idx + 1;
-      queueIndexRef.current = nextIdx;
-      try {
-        await startPlayback(queue[nextIdx]);
-      } catch (err) {
-        console.error('Erreur lecture sortie suivante:', err);
-      }
-    }
-    // Si on est à la fin de la file, on ne fait rien (pas de boucle)
-  }, [startPlayback]);
-
-  // ── Piste précédente : sortie précédente dans la file d'affichage ─────────
+  // ── ⏮ Piste précédente dans l'album (SDK natif) ──────────────────────────
   const prevTrack = useCallback(async () => {
-    const queue = queueRef.current;
-    const idx   = queueIndexRef.current;
-
-    // Si on est au début, revenir au début de la sortie courante
-    if (queue.length === 0 || idx <= 0) {
-      await playerRef.current?.seek(0);
-      return;
-    }
-
-    const prevIdx = idx - 1;
-    queueIndexRef.current = prevIdx;
-    try {
-      await startPlayback(queue[prevIdx]);
-    } catch (err) {
-      console.error('Erreur lecture sortie précédente:', err);
-    }
-  }, [startPlayback]);
+    await playerRef.current?.previousTrack();
+  }, []);
 
   const togglePlay = useCallback(async () => {
     await playerRef.current?.togglePlay();
