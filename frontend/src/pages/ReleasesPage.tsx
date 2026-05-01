@@ -61,10 +61,16 @@ const ReleasesPage: React.FC = () => {
   const [view,             setView]             = useState<View>('list');
   const [filter,           setFilter]           = useState<Filter>('all');
 
-  const { isReady, playAlbum, currentTrack, isPlaying, isPremiumError } = useSpotifyPlayer();
+  const { isReady, playAlbum, currentAlbumId, isPlaying, isPremiumError } = useSpotifyPlayer();
 
   const handlePlay = (spotifyId: string) => {
-    if (isReady) playAlbum(spotifyId);
+    if (!isReady) return;
+    // File = toutes les sorties affichées qui ont un spotifyId et sont déjà sorties
+    const queue = filteredReleases
+      .filter(r => r.spotifyId && new Date(r.releaseDate) <= now)
+      .map(r => r.spotifyId!);
+    const index = queue.indexOf(spotifyId);
+    playAlbum(spotifyId, queue, index);
   };
 
   // ── Stats rapides ──────────────────────────────────────────────────────
@@ -394,7 +400,7 @@ const ReleasesPage: React.FC = () => {
                               <ReleaseCard
                                 release={release}
                                 onPlay={isReady ? handlePlay : undefined}
-                                isPlaying={isPlaying && currentTrack?.uri === `spotify:track:${release.spotifyId}` || isPlaying && currentTrack?.albumName === release.name}
+                                isPlaying={isPlaying && currentAlbumId === release.spotifyId}
                               />
                             </div>
                           ))}
@@ -438,7 +444,7 @@ const ReleasesPage: React.FC = () => {
             <ReleaseCard
               release={selectedRelease}
               onPlay={isReady ? handlePlay : undefined}
-              isPlaying={isPlaying && currentTrack?.albumName === selectedRelease.name}
+              isPlaying={isPlaying && currentAlbumId === selectedRelease.spotifyId}
             />
           </div>
         </div>

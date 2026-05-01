@@ -57,25 +57,27 @@ interface SpotifyPlayerInstance {
 // ─── Context type ─────────────────────────────────────────────────────────────
 
 export interface PlayerTrack {
-  name:      string;
-  artist:    string;
-  albumName: string;
-  imageUrl:  string;
-  uri:       string;
+  name:       string;
+  artist:     string;
+  albumName:  string;
+  imageUrl:   string;
+  uri:        string;
   durationMs: number;
 }
 
 interface SpotifyPlayerContextType {
-  isReady:    boolean;
-  isPlaying:  boolean;
+  isReady:        boolean;
+  isPlaying:      boolean;
   isPremiumError: boolean;
-  currentTrack: PlayerTrack | null;
-  positionMs:   number;
-  playAlbum:    (spotifyAlbumId: string) => Promise<void>;
-  togglePlay:   () => Promise<void>;
-  nextTrack:    () => Promise<void>;
-  prevTrack:    () => Promise<void>;
-  seekTo:       (ms: number) => Promise<void>;
+  currentTrack:   PlayerTrack | null;
+  currentAlbumId: string | null;   // spotifyId de l'album en lecture
+  positionMs:     number;
+  // queue: liste des spotifyAlbumIds dans l'ordre d'affichage
+  playAlbum: (spotifyAlbumId: string, queue?: string[], index?: number) => Promise<void>;
+  togglePlay: () => Promise<void>;
+  nextTrack:  () => Promise<void>;
+  prevTrack:  () => Promise<void>;
+  seekTo:     (ms: number) => Promise<void>;
 }
 
 const SpotifyPlayerContext = createContext<SpotifyPlayerContextType | undefined>(undefined);
@@ -85,17 +87,25 @@ const SpotifyPlayerContext = createContext<SpotifyPlayerContextType | undefined>
 export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
 
-  const [isSDKLoaded,     setIsSDKLoaded]     = useState(false);
-  const [isReady,         setIsReady]         = useState(false);
-  const [isPlaying,       setIsPlaying]       = useState(false);
-  const [isPremiumError,  setIsPremiumError]  = useState(false);
-  const [currentTrack,    setCurrentTrack]    = useState<PlayerTrack | null>(null);
-  const [positionMs,      setPositionMs]      = useState(0);
+  const [isSDKLoaded,      setIsSDKLoaded]      = useState(false);
+  const [isReady,          setIsReady]          = useState(false);
+  const [isPlaying,        setIsPlaying]        = useState(false);
+  const [isPremiumError,   setIsPremiumError]   = useState(false);
+  const [currentTrack,     setCurrentTrack]     = useState<PlayerTrack | null>(null);
+  const [currentAlbumId,   setCurrentAlbumId]   = useState<string | null>(null);
+  const [positionMs,       setPositionMs]       = useState(0);
   const [spotifyConnected, setSpotifyConnected] = useState(false);
 
-  const playerRef  = useRef<SpotifyPlayerInstance | null>(null);
-  const deviceIdRef = useRef<string>('');
+  const playerRef           = useRef<SpotifyPlayerInstance | null>(null);
+  const deviceIdRef         = useRef<string>('');
   const positionIntervalRef = useRef<number>(0);
+
+  // ── File de lecture (refs pour éviter les closures périmées) ─────────────
+  const queueRef      = useRef<string[]>([]);   // spotifyAlbumIds dans l'ordre affiché
+  const queueIndexRef = useRef<number>(-1);
+
+  // ── Flag pour auto-play : Spotify peut démarrer en pause la 1ère fois ────
+  const pendingAutoPlayRef = useRef(false);
 
   // ── Vérifier si Spotify est connecté ──────────────────────────────────────
   useEffect(() => {
@@ -118,10 +128,6 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
     document.body.appendChild(script);
 
     window.onSpotifyWebPlaybackSDKReady = () => setIsSDKLoaded(true);
-
-    return () => {
-      // Ne pas supprimer le script — le SDK ne peut pas être rechargé proprement
-    };
   }, [spotifyConnected, isSDKLoaded]);
 
   // ── Initialiser le player quand le SDK est prêt ───────────────────────────
@@ -144,12 +150,19 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsReady(true);
     });
 
-    player.addListener('not_ready', () => {
-      setIsReady(false);
-    });
+    player.addListener('not_ready', () => setIsReady(false));
 
     player.addListener('player_state_changed', (state) => {
       if (!state) return;
+
+      // ── Fix auto-play : si Spotify démarre en pause, on force la reprise ──
+      if (pendingAutoPlayRef.current) {
+        pendingAutoPlayRef.current = false;
+        if (state.paused) {
+          player.togglePlay();
+          return; // attendre le prochain événement d'état
+        }
+      }
 
       const track = state.track_window.current_track;
       setIsPlaying(!state.paused);
@@ -178,14 +191,10 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
       console.warn('⚠️ Spotify Premium requis pour le lecteur web');
       setIsPremiumError(true);
     });
-
-    player.addListener('authentication_error', ({ message }) => {
-      console.error('Spotify auth error:', message);
-    });
-
-    player.addListener('initialization_error', ({ message }) => {
-      console.error('Spotify init error:', message);
-    });
+    player.addListener('authentication_error', ({ message }) =>
+      console.error('Spotify auth error:', message));
+    player.addListener('initialization_error', ({ message }) =>
+      console.error('Spotify init error:', message));
 
     player.connect().then(ok => {
       if (ok) console.log('✅ Spotify Player connecté');
@@ -200,37 +209,89 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [isSDKLoaded]);
 
-  // ── Lancer la lecture d'un album ──────────────────────────────────────────
-  const playAlbum = useCallback(async (spotifyAlbumId: string) => {
-    if (!isReady || !deviceIdRef.current) return;
+  // ── Appel API Spotify pour lancer la lecture d'un album ───────────────────
+  const startPlayback = useCallback(async (spotifyAlbumId: string) => {
+    if (!deviceIdRef.current) return;
+    const { access_token } = await spotifyAccountService.getToken();
+
+    pendingAutoPlayRef.current = true;
+
+    await fetch(
+      `https://api.spotify.com/v1/me/player/play?device_id=${deviceIdRef.current}`,
+      {
+        method:  'PUT',
+        headers: {
+          Authorization:  `Bearer ${access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          context_uri: `spotify:album:${spotifyAlbumId}`,
+          offset:       { position: 0 },
+          position_ms:  0,
+        }),
+      }
+    );
+
+    setCurrentAlbumId(spotifyAlbumId);
+  }, []);
+
+  // ── playAlbum : point d'entrée public, accepte une queue optionnelle ──────
+  const playAlbum = useCallback(async (
+    spotifyAlbumId: string,
+    queue?: string[],
+    index?: number,
+  ) => {
+    if (!isReady) return;
     try {
-      const { access_token } = await spotifyAccountService.getToken();
-      await fetch(
-        `https://api.spotify.com/v1/me/player/play?device_id=${deviceIdRef.current}`,
-        {
-          method: 'PUT',
-          headers: {
-            Authorization:  `Bearer ${access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ context_uri: `spotify:album:${spotifyAlbumId}` }),
-        }
-      );
+      if (queue) {
+        queueRef.current      = queue;
+        queueIndexRef.current = index ?? queue.indexOf(spotifyAlbumId);
+      }
+      await startPlayback(spotifyAlbumId);
     } catch (err) {
       console.error('Erreur lecture album:', err);
     }
-  }, [isReady]);
+  }, [isReady, startPlayback]);
+
+  // ── Piste suivante : sortie suivante dans la file d'affichage ─────────────
+  const nextTrack = useCallback(async () => {
+    const queue = queueRef.current;
+    const idx   = queueIndexRef.current;
+
+    if (queue.length > 0 && idx < queue.length - 1) {
+      const nextIdx = idx + 1;
+      queueIndexRef.current = nextIdx;
+      try {
+        await startPlayback(queue[nextIdx]);
+      } catch (err) {
+        console.error('Erreur lecture sortie suivante:', err);
+      }
+    }
+    // Si on est à la fin de la file, on ne fait rien (pas de boucle)
+  }, [startPlayback]);
+
+  // ── Piste précédente : sortie précédente dans la file d'affichage ─────────
+  const prevTrack = useCallback(async () => {
+    const queue = queueRef.current;
+    const idx   = queueIndexRef.current;
+
+    // Si on est au début, revenir au début de la sortie courante
+    if (queue.length === 0 || idx <= 0) {
+      await playerRef.current?.seek(0);
+      return;
+    }
+
+    const prevIdx = idx - 1;
+    queueIndexRef.current = prevIdx;
+    try {
+      await startPlayback(queue[prevIdx]);
+    } catch (err) {
+      console.error('Erreur lecture sortie précédente:', err);
+    }
+  }, [startPlayback]);
 
   const togglePlay = useCallback(async () => {
     await playerRef.current?.togglePlay();
-  }, []);
-
-  const nextTrack = useCallback(async () => {
-    await playerRef.current?.nextTrack();
-  }, []);
-
-  const prevTrack = useCallback(async () => {
-    await playerRef.current?.previousTrack();
   }, []);
 
   const seekTo = useCallback(async (ms: number) => {
@@ -240,7 +301,7 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <SpotifyPlayerContext.Provider value={{
-      isReady, isPlaying, isPremiumError, currentTrack, positionMs,
+      isReady, isPlaying, isPremiumError, currentTrack, currentAlbumId, positionMs,
       playAlbum, togglePlay, nextTrack, prevTrack, seekTo,
     }}>
       {children}
