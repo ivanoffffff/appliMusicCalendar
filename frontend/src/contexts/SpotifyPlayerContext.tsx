@@ -69,15 +69,19 @@ export interface PlayerTrack {
   durationMs: number;
 }
 
+export interface QueueTrack {
+  uri:     string;
+  albumId: string; // spotifyId de la sortie à laquelle appartient ce titre
+}
+
 interface SpotifyPlayerContextType {
   isReady:        boolean;
   isPlaying:      boolean;
   isPremiumError: boolean;
   currentTrack:   PlayerTrack | null;
-  currentAlbumId: string | null;   // spotifyId de l'album en lecture
+  currentAlbumId: string | null;
   positionMs:     number;
-  // queue: liste des spotifyAlbumIds dans l'ordre d'affichage
-  playAlbum: (spotifyAlbumId: string, queue?: string[], index?: number) => Promise<void>;
+  playQueue:  (tracks: QueueTrack[], startUri: string) => Promise<void>;
   togglePlay: () => Promise<void>;
   nextTrack:  () => Promise<void>;
   prevTrack:  () => Promise<void>;
@@ -104,20 +108,11 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
   const deviceIdRef         = useRef<string>('');
   const positionIntervalRef = useRef<number>(0);
 
-  // ── File de lecture (refs pour éviter les closures périmées) ─────────────
-  const queueRef      = useRef<string[]>([]);   // spotifyAlbumIds dans l'ordre affiché
-  const queueIndexRef = useRef<number>(-1);
+  // Maps track URI → spotifyId de la sortie, pour mettre à jour currentAlbumId
+  const trackToAlbumRef = useRef<Map<string, string>>(new Map());
 
-  // ── Ref vers startPlayback pour l'utiliser dans les listeners ────────────
-  const startPlaybackRef = useRef<((id: string) => Promise<void>) | null>(null);
-
-  // ── Flag auto-play : Spotify peut démarrer en pause la 1ère fois ─────────
+  // Flag auto-play : Spotify peut démarrer en pause la 1ère fois
   const pendingAutoPlayRef = useRef(false);
-
-  // ── Watchdog fin d'album ──────────────────────────────────────────────────
-  // Timer armé sur la dernière piste de chaque album. À l'expiration, on vérifie
-  // si le player est en pause → l'album est terminé → on avance dans la file.
-  const albumEndTimerRef = useRef<number>(0);
 
   // ── Vérifier si Spotify est connecté ──────────────────────────────────────
   useEffect(() => {
@@ -167,39 +162,21 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
     player.addListener('player_state_changed', (state) => {
       if (!state) return;
 
-      // ── Fix auto-play : si Spotify démarre en pause, on force la reprise ──
+      // Fix auto-play : si Spotify démarre en pause, on force la reprise
       if (pendingAutoPlayRef.current) {
         pendingAutoPlayRef.current = false;
         if (state.paused) {
           player.togglePlay();
-          return; // attendre le prochain événement d'état
+          return;
         }
       }
 
-      // ── Watchdog fin d'album : annuler le timer à chaque changement d'état ──
-      clearTimeout(albumEndTimerRef.current);
-
-      // ── Si on joue la dernière piste, armer le watchdog ───────────────────
-      const isLastTrack = !state.paused && state.track_window.next_tracks.length === 0;
-      if (isLastTrack) {
-        const remaining = state.duration - state.position;
-        // +1 500 ms de marge pour laisser Spotify traiter la fin
-        albumEndTimerRef.current = window.setTimeout(async () => {
-          const s = await playerRef.current?.getCurrentState();
-          // Si paused (ou player disparu), l'album est fini → avancer dans la file
-          if (!s || s.paused) {
-            const queue = queueRef.current;
-            const idx   = queueIndexRef.current;
-            if (idx >= 0 && idx < queue.length - 1) {
-              const nextIdx = idx + 1;
-              queueIndexRef.current = nextIdx;
-              startPlaybackRef.current?.(queue[nextIdx]);
-            }
-          }
-        }, remaining + 1500);
-      }
-
       const track = state.track_window.current_track;
+
+      // Mettre à jour la sortie en cours depuis la map trackUri → albumId
+      const albumId = trackToAlbumRef.current.get(track.uri) ?? null;
+      setCurrentAlbumId(albumId);
+
       setIsPlaying(!state.paused);
       setPositionMs(state.position);
       setCurrentTrack({
@@ -239,14 +216,13 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return () => {
       clearInterval(positionIntervalRef.current);
-      clearTimeout(albumEndTimerRef.current);
       player.disconnect();
       playerRef.current = null;
     };
   }, [isSDKLoaded]);
 
-  // ── Appel API Spotify pour lancer la lecture d'un album ───────────────────
-  const startPlayback = useCallback(async (spotifyAlbumId: string) => {
+  // ── Lance la lecture avec une liste plate de track URIs ───────────────────
+  const startPlayback = useCallback(async (uris: string[], startUri: string) => {
     if (!deviceIdRef.current) return;
     const { access_token } = await spotifyAccountService.getToken();
 
@@ -261,45 +237,37 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          context_uri: `spotify:album:${spotifyAlbumId}`,
-          offset:       { position: 0 },
-          position_ms:  0,
+          uris,
+          offset:      { uri: startUri },
+          position_ms: 0,
         }),
       }
     );
-
-    setCurrentAlbumId(spotifyAlbumId);
   }, []);
 
-  // Garder startPlaybackRef à jour pour les listeners (qui capturent la ref, pas la valeur)
-  useEffect(() => {
-    startPlaybackRef.current = startPlayback;
-  }, [startPlayback]);
-
-  // ── playAlbum : point d'entrée public, accepte une queue optionnelle ──────
-  const playAlbum = useCallback(async (
-    spotifyAlbumId: string,
-    queue?: string[],
-    index?: number,
-  ) => {
+  // ── playQueue : point d'entrée public ────────────────────────────────────
+  // tracks = liste plate de tous les titres (toutes sorties confondues, dans
+  // l'ordre d'affichage). startUri = URI du premier titre à jouer.
+  const playQueue = useCallback(async (tracks: QueueTrack[], startUri: string) => {
     if (!isReady) return;
     try {
-      if (queue) {
-        queueRef.current      = queue;
-        queueIndexRef.current = index ?? queue.indexOf(spotifyAlbumId);
-      }
-      await startPlayback(spotifyAlbumId);
+      // Construire la map trackUri → albumId avant de lancer la lecture
+      const map = new Map<string, string>();
+      tracks.forEach(t => map.set(t.uri, t.albumId));
+      trackToAlbumRef.current = map;
+
+      await startPlayback(tracks.map(t => t.uri), startUri);
     } catch (err) {
-      console.error('Erreur lecture album:', err);
+      console.error('Erreur lecture queue:', err);
     }
   }, [isReady, startPlayback]);
 
-  // ── ⏭ Piste suivante dans l'album (SDK natif) ────────────────────────────
+  // nextTrack / prevTrack naviguent nativement dans le tableau uris passé
+  // à Spotify — donc titre par titre à travers toutes les sorties.
   const nextTrack = useCallback(async () => {
     await playerRef.current?.nextTrack();
   }, []);
 
-  // ── ⏮ Piste précédente dans l'album (SDK natif) ──────────────────────────
   const prevTrack = useCallback(async () => {
     await playerRef.current?.previousTrack();
   }, []);
@@ -316,7 +284,7 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <SpotifyPlayerContext.Provider value={{
       isReady, isPlaying, isPremiumError, currentTrack, currentAlbumId, positionMs,
-      playAlbum, togglePlay, nextTrack, prevTrack, seekTo,
+      playQueue, togglePlay, nextTrack, prevTrack, seekTo,
     }}>
       {children}
     </SpotifyPlayerContext.Provider>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import type { Release, CalendarEvent } from '../types';
-import { releaseService } from '../services/api';
+import { releaseService, spotifyAccountService } from '../services/api';
 import ReleaseCard from '../components/releases/ReleaseCard';
 import Header from '../components/ui/Header';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -60,17 +60,58 @@ const ReleasesPage: React.FC = () => {
   const [selectedRelease,  setSelectedRelease]  = useState<Release | null>(null);
   const [view,             setView]             = useState<View>('list');
   const [filter,           setFilter]           = useState<Filter>('all');
+  const [isLoadingPlay,    setIsLoadingPlay]    = useState(false);
 
-  const { isReady, playAlbum, currentAlbumId, isPlaying, isPremiumError } = useSpotifyPlayer();
+  const { isReady, playQueue, currentAlbumId, isPlaying, isPremiumError } = useSpotifyPlayer();
 
-  const handlePlay = (spotifyId: string) => {
-    if (!isReady) return;
-    // File = toutes les sorties affichées qui ont un spotifyId et sont déjà sorties
-    const queue = filteredReleases
-      .filter(r => r.spotifyId && new Date(r.releaseDate) <= now)
-      .map(r => r.spotifyId!);
-    const index = queue.indexOf(spotifyId);
-    playAlbum(spotifyId, queue, index);
+  // Récupère tous les titres d'un album depuis l'API Spotify (max 50 pistes)
+  const fetchAlbumTracks = async (spotifyId: string, token: string): Promise<string[]> => {
+    try {
+      const res = await fetch(
+        `https://api.spotify.com/v1/albums/${spotifyId}/tracks?limit=50`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!res.ok) return [];
+      const data = await res.json();
+      return (data.items ?? []).map((t: { uri: string }) => t.uri);
+    } catch {
+      return [];
+    }
+  };
+
+  const handlePlay = async (spotifyId: string) => {
+    if (!isReady || isLoadingPlay) return;
+    setIsLoadingPlay(true);
+    try {
+      const { access_token } = await spotifyAccountService.getToken();
+
+      // Sorties jouables dans l'ordre d'affichage (même tri que le rendu)
+      const playable = filteredReleases
+        .filter(r => r.spotifyId && new Date(r.releaseDate) <= now)
+        .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
+
+      // Récupérer les pistes de tous les albums en parallèle
+      const trackLists = await Promise.all(
+        playable.map(r => fetchAlbumTracks(r.spotifyId!, access_token)),
+      );
+
+      // Construire la liste plate {uri, albumId}
+      const tracks: { uri: string; albumId: string }[] = [];
+      playable.forEach((r, i) => {
+        trackLists[i].forEach(uri => tracks.push({ uri, albumId: r.spotifyId! }));
+      });
+
+      // Trouver le premier titre de la sortie cliquée
+      const clickedIdx = playable.findIndex(r => r.spotifyId === spotifyId);
+      const startUri   = trackLists[clickedIdx]?.[0];
+      if (!startUri || tracks.length === 0) return;
+
+      await playQueue(tracks, startUri);
+    } catch (err) {
+      console.error('Erreur handlePlay:', err);
+    } finally {
+      setIsLoadingPlay(false);
+    }
   };
 
   // ── Stats rapides ──────────────────────────────────────────────────────
