@@ -1,88 +1,383 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { artistService } from '../services/api';
-import type { FavoriteArtist } from '../types';
+import { artistService, releaseService } from '../services/api';
+import type { FavoriteArtist, Release } from '../types';
 import Header from '../components/ui/Header';
-import StatsCard from '../components/stats/StatsCard';
-import TopArtistCard from '../components/artists/TopArtistCard';
-import GenreDistribution from '../components/stats/GenreDistribution';
-import ProfileBadges from '../components/profile/ProfileBadges';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { SpotifyIcon, DeezerIcon } from '../components/common/PlatformIcons';
 import {
   MusicNoteIcon,
-  WaveIcon,
   MicrophoneIcon,
   CalendarIcon,
-  TrendingUpIcon,
   StarIcon,
   UsersIcon,
-  SparkleIcon,
   ChartBarIcon,
-  UserIcon,
+  ClockIcon,
+  SparkleIcon,
+  FireIcon,
+  ArrowRightIcon,
 } from '../components/ui/Icons';
 
-// ─── Section header réutilisable ───────────────────────────────────────────
-const SectionHeader: React.FC<{ Icon: React.FC<{ className?: string }>; title: string }> = ({ Icon, title }) => (
-  <div className="flex items-center gap-3 mb-6">
-    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shrink-0">
-      <Icon className="w-4 h-4 text-white" />
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const formatFollowers = (n: number) => {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+};
+
+const formatDate = (ds: string) =>
+  new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long' }).format(new Date(ds));
+
+const daysUntil = (ds: string) =>
+  Math.ceil((new Date(ds).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+
+const TYPE_LABEL: Record<string, string> = { ALBUM: 'Album', EP: 'EP', SINGLE: 'Single' };
+const TYPE_GRADIENT: Record<string, string> = {
+  ALBUM:  'from-violet-500 to-purple-600',
+  EP:     'from-blue-500 to-indigo-600',
+  SINGLE: 'from-emerald-500 to-green-600',
+};
+
+// ─── Block : Prochaine sortie ─────────────────────────────────────────────────
+
+const NextReleaseBlock: React.FC<{ release: Release | null; isLoading: boolean }> = ({ release, isLoading }) => {
+  const [imgError, setImgError] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="h-full min-h-[300px] rounded-2xl bg-white/60 dark:bg-white/5 border border-gray-100 dark:border-white/8 animate-pulse" />
+    );
+  }
+
+  if (!release) {
+    return (
+      <div className="h-full min-h-[300px] rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 flex flex-col items-center justify-center gap-3 p-8 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-500/15 dark:to-accent-500/15 flex items-center justify-center">
+          <CalendarIcon className="w-8 h-8 text-primary-400" />
+        </div>
+        <p className="font-bold text-primary text-lg">Aucune sortie prévue</p>
+        <p className="text-secondary text-sm max-w-xs">
+          Suivez plus d'artistes pour voir leurs prochaines sorties ici.
+        </p>
+      </div>
+    );
+  }
+
+  const days = daysUntil(release.releaseDate);
+  const gradient = TYPE_GRADIENT[release.releaseType] ?? TYPE_GRADIENT.SINGLE;
+  const hasImage = !!release.imageUrl && !imgError;
+
+  return (
+    <div className="relative h-full min-h-[300px] rounded-2xl overflow-hidden group cursor-default">
+      {/* Background */}
+      {hasImage ? (
+        <>
+          <img
+            src={release.imageUrl}
+            alt={release.name}
+            className="absolute inset-0 w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-700"
+            onError={() => setImgError(true)}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
+        </>
+      ) : (
+        <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+      )}
+
+      {/* Top badges */}
+      <div className="absolute top-4 left-4 flex gap-2">
+        <span className={`flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full bg-gradient-to-r ${gradient} text-white shadow-lg`}>
+          <ClockIcon className="w-3 h-3" />
+          À venir
+        </span>
+        <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white border border-white/20">
+          {TYPE_LABEL[release.releaseType] ?? 'Sortie'}
+        </span>
+      </div>
+
+      {/* Countdown badge */}
+      <div className="absolute top-4 right-4">
+        <div className="bg-black/50 backdrop-blur-md text-white rounded-2xl px-3 py-2 text-center border border-white/15">
+          <p className="text-2xl font-black leading-none">{days}</p>
+          <p className="text-[10px] font-semibold opacity-80 mt-0.5">jour{days > 1 ? 's' : ''}</p>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="absolute bottom-0 left-0 right-0 p-6">
+        <p className="text-white/70 text-sm font-semibold mb-1">{release.artist.name}</p>
+        <h2 className="text-white text-2xl sm:text-3xl font-black leading-tight mb-3 line-clamp-2">
+          {release.name}
+        </h2>
+        <div className="flex items-center justify-between">
+          <p className="text-white/60 text-sm">
+            <CalendarIcon className="w-3.5 h-3.5 inline mr-1.5 opacity-70" />
+            {formatDate(release.releaseDate)}
+          </p>
+          <div className="flex gap-2">
+            {release.spotifyUrl && (
+              <a
+                href={release.spotifyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="bg-[#1db954] p-2 rounded-full shadow-md hover:scale-110 transition-transform"
+                title="Voir sur Spotify"
+              >
+                <SpotifyIcon className="w-4 h-4 text-white" />
+              </a>
+            )}
+            {release.deezerUrl && (
+              <a
+                href={release.deezerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="bg-gradient-to-r from-orange-500 to-pink-500 p-2 rounded-full shadow-md hover:scale-110 transition-transform"
+                title="Voir sur Deezer"
+              >
+                <DeezerIcon className="w-4 h-4 text-white" />
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
-    <h2 className="text-xl font-bold text-primary whitespace-nowrap">{title}</h2>
-    <div className="flex-1 h-px bg-gradient-to-r from-primary-200/50 dark:from-white/10 to-transparent" />
-  </div>
-);
+  );
+};
 
-// ─── Page principale ───────────────────────────────────────────────────────
+// ─── Block : Stats rapides ─────────────────────────────────────────────────────
+
+interface QuickStats {
+  totalArtists: number;
+  avgPopularity: number;
+  totalGenres: number;
+}
+
+const StatsBlock: React.FC<{ stats: QuickStats; isLoading: boolean }> = ({ stats, isLoading }) => {
+  const rows = [
+    { Icon: MicrophoneIcon, label: 'Artistes suivis',    value: stats.totalArtists,                          color: 'text-primary-500' },
+    { Icon: StarIcon,       label: 'Popularité moyenne', value: `${stats.avgPopularity}/100`,                 color: 'text-amber-500'   },
+    { Icon: ChartBarIcon,   label: 'Genres écoutés',     value: stats.totalGenres,                           color: 'text-violet-500'  },
+  ];
+
+  return (
+    <div className="rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 p-5 dark:backdrop-blur-sm flex flex-col gap-4">
+      <h3 className="text-sm font-bold text-secondary uppercase tracking-wider">Statistiques</h3>
+
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1,2,3].map(i => (
+            <div key={i} className="flex items-center gap-3 animate-pulse">
+              <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/8 shrink-0" />
+              <div className="flex-1 h-4 bg-gray-100 dark:bg-white/8 rounded" />
+              <div className="w-12 h-4 bg-gray-100 dark:bg-white/8 rounded" />
+            </div>
+          ))}
+        </div>
+      ) : stats.totalArtists === 0 ? (
+        <p className="text-secondary text-sm">Ajoutez des artistes pour voir vos stats.</p>
+      ) : (
+        <div className="space-y-3">
+          {rows.map(({ Icon, label, value, color }) => (
+            <div key={label} className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-gray-50 dark:bg-white/8 flex items-center justify-center shrink-0">
+                <Icon className={`w-4 h-4 ${color}`} />
+              </div>
+              <span className="flex-1 text-sm text-secondary truncate">{label}</span>
+              <span className="text-sm font-black text-primary tabular-nums">{value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Block : Top artiste ──────────────────────────────────────────────────────
+
+const TopArtistBlock: React.FC<{ favorite: FavoriteArtist | undefined; isLoading: boolean }> = ({ favorite, isLoading }) => {
+  const [imgError, setImgError] = useState(false);
+
+  if (isLoading) {
+    return <div className="rounded-2xl bg-white/60 dark:bg-white/5 border border-gray-100 dark:border-white/8 h-40 animate-pulse" />;
+  }
+
+  if (!favorite) {
+    return (
+      <div className="rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 p-5 flex flex-col items-center justify-center gap-2 text-center h-40">
+        <MicrophoneIcon className="w-8 h-8 text-secondary" />
+        <p className="text-secondary text-sm">Aucun artiste suivi</p>
+      </div>
+    );
+  }
+
+  const { artist } = favorite;
+  const hasImage = !!artist.imageUrl && !imgError;
+  const url = artist.spotifyUrl || (artist.spotifyId ? `https://open.spotify.com/artist/${artist.spotifyId}` : undefined);
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="relative rounded-2xl overflow-hidden block group cursor-pointer h-40"
+    >
+      {/* Background image */}
+      {hasImage ? (
+        <>
+          <img
+            src={artist.imageUrl!}
+            alt={artist.name}
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={() => setImgError(true)}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+        </>
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-accent-500/20" />
+      )}
+
+      {/* Badge top */}
+      <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
+        <FireIcon className="w-3 h-3" />
+        Top artiste
+      </div>
+
+      {/* Info */}
+      <div className="absolute bottom-0 left-0 right-0 p-4">
+        <p className="text-white font-black text-base leading-tight truncate">{artist.name}</p>
+        <p className="text-white/60 text-xs mt-0.5">
+          {formatFollowers(artist.followers || 0)} fans · {artist.popularity || 0}/100
+        </p>
+      </div>
+    </a>
+  );
+};
+
+// ─── Block : Sorties cette semaine ────────────────────────────────────────────
+
+const ThisWeekBlock: React.FC<{ releases: Release[]; onSeeAll: () => void }> = ({ releases, onSeeAll }) => {
+  if (releases.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 p-5 dark:backdrop-blur-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
+            <SparkleIcon className="w-3.5 h-3.5 text-white" />
+          </div>
+          <h3 className="font-bold text-primary">Sorties cette semaine</h3>
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+            {releases.length} nouvelle{releases.length > 1 ? 's' : ''}
+          </span>
+        </div>
+        <button
+          onClick={onSeeAll}
+          className="text-xs text-secondary hover:text-primary font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+        >
+          Voir tout <ArrowRightIcon className="w-3 h-3" />
+        </button>
+      </div>
+
+      {/* Horizontal scroll */}
+      <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+        {releases.map(release => (
+          <MiniReleaseCard key={release.id} release={release} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const MiniReleaseCard: React.FC<{ release: Release }> = ({ release }) => {
+  const [imgError, setImgError] = useState(false);
+  const url = release.spotifyUrl || release.deezerUrl;
+  const gradient = TYPE_GRADIENT[release.releaseType] ?? TYPE_GRADIENT.SINGLE;
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex-shrink-0 w-[120px] group cursor-pointer"
+    >
+      <div className="relative w-[120px] h-[120px] rounded-xl overflow-hidden mb-2 bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/30 dark:to-accent-900/30">
+        {release.imageUrl && !imgError ? (
+          <img
+            src={release.imageUrl}
+            alt={release.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <MusicNoteIcon className="w-8 h-8 text-primary-400" />
+          </div>
+        )}
+        {/* Type badge */}
+        <span className={`absolute bottom-1.5 left-1.5 text-[9px] font-black px-1.5 py-0.5 rounded-full bg-gradient-to-r ${gradient} text-white`}>
+          {TYPE_LABEL[release.releaseType]}
+        </span>
+      </div>
+      <p className="text-xs font-bold text-primary truncate group-hover:text-primary-500 transition-colors">{release.name}</p>
+      <p className="text-[11px] text-secondary truncate">{release.artist.name}</p>
+    </a>
+  );
+};
+
+// ─── Page principale ──────────────────────────────────────────────────────────
+
 const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const { user }   = useAuth();
+  const navigate   = useNavigate();
 
-  const [favorites, setFavorites]   = useState<FavoriteArtist[]>([]);
-  const [isLoading, setIsLoading]   = useState(true);
-  const [error, setError]           = useState('');
+  const [favorites, setFavorites] = useState<FavoriteArtist[]>([]);
+  const [releases,  setReleases]  = useState<Release[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadFavorites();
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const start = new Date(); start.setMonth(start.getMonth() - 1);
+        const end   = new Date(); end.setMonth(end.getMonth() + 12);
+
+        const [favsRes, relRes] = await Promise.all([
+          artistService.getFavorites(),
+          releaseService.getUserReleases(start.toISOString(), end.toISOString()),
+        ]);
+        if (favsRes.success && favsRes.data) setFavorites(favsRes.data);
+        if (relRes.success && relRes.data)   setReleases(relRes.data);
+      } catch {
+        // silencieux
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
   }, []);
 
-  const loadFavorites = async () => {
-    try {
-      setIsLoading(true);
-      const response = await artistService.getFavorites();
-      if (response.success && response.data) {
-        setFavorites(response.data);
-      }
-    } catch {
-      setError('Impossible de charger les statistiques');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // ── Dérivations ──────────────────────────────────────────────────────────
+  const now = new Date();
 
-  // ── Stats ────────────────────────────────────────────────────────────────
-  const stats = React.useMemo(() => {
-    if (!favorites.length) return { totalArtists: 0, avgPopularity: 0, totalFollowers: 0 };
-    const totalArtists   = favorites.length;
-    const avgPopularity  = Math.round(favorites.reduce((s, f) => s + (f.artist.popularity || 0), 0) / totalArtists);
-    const totalFollowers = favorites.reduce((s, f) => s + (f.artist.followers || 0), 0);
-    return { totalArtists, avgPopularity, totalFollowers };
-  }, [favorites]);
+  const nextRelease = releases
+    .filter(r => new Date(r.releaseDate) > now)
+    .sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime())[0] ?? null;
 
-  const topArtists = React.useMemo(
-    () => [...favorites].sort((a, b) => (b.artist.popularity || 0) - (a.artist.popularity || 0)).slice(0, 4),
-    [favorites]
-  );
+  const thisWeekReleases = releases
+    .filter(r => {
+      const d = new Date(r.releaseDate);
+      return d <= now && d >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    })
+    .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
 
-  const genreDistribution = React.useMemo(() => {
-    if (!favorites.length) return [];
-    const count: Record<string, number> = {};
-    favorites.forEach(f => (f.artist.genres || []).forEach(g => (count[g] = (count[g] || 0) + 1)));
-    return Object.entries(count)
-      .map(([name, c]) => ({ name, count: c, percentage: Math.round((c / favorites.length) * 100) }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
-  }, [favorites]);
+  const topFavorite = favorites.length > 0
+    ? [...favorites].sort((a, b) => (b.artist.popularity || 0) - (a.artist.popularity || 0))[0]
+    : undefined;
 
   const totalGenres = React.useMemo(() => {
     const s = new Set<string>();
@@ -90,190 +385,84 @@ const DashboardPage: React.FC = () => {
     return s.size;
   }, [favorites]);
 
-  const formatFollowers = (n: number) => {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-    return n.toString();
+  const stats: QuickStats = {
+    totalArtists:   favorites.length,
+    avgPopularity:  favorites.length
+      ? Math.round(favorites.reduce((s, f) => s + (f.artist.popularity || 0), 0) / favorites.length)
+      : 0,
+    totalGenres,
   };
+
+  const greetingHour = new Date().getHours();
+  const greeting = greetingHour < 12 ? 'Bonjour' : greetingHour < 18 ? 'Bon après-midi' : 'Bonsoir';
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen mesh-bg">
       <Header />
 
-      {/* ══════════ HERO ══════════ */}
-      <div className="relative overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-28 md:pb-12">
 
-        {/* Animated orbs */}
-        <div
-          className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full opacity-[0.07] dark:opacity-[0.12] pointer-events-none animate-orb-float-1"
-          style={{ background: 'radial-gradient(circle, #818cf8 0%, #6366f1 40%, transparent 70%)' }}
-        />
-        <div
-          className="absolute -bottom-24 -left-24 w-[400px] h-[400px] rounded-full opacity-[0.06] dark:opacity-[0.1] pointer-events-none animate-orb-float-2"
-          style={{ background: 'radial-gradient(circle, #a78bfa 0%, #8b5cf6 40%, transparent 70%)' }}
-        />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full opacity-[0.04] dark:opacity-[0.07] pointer-events-none animate-orb-float-3"
-          style={{ background: 'radial-gradient(ellipse, #6366f1 0%, transparent 70%)' }}
-        />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8">
-
-            {/* ── Welcome text ── */}
-            <div className="animate-entrance">
-              {/* Eyebrow label */}
-              <div className="inline-flex items-center gap-2 mb-4 px-3 py-1.5 rounded-full border border-primary-200/60 dark:border-primary-500/20 bg-primary-50/80 dark:bg-primary-500/10 backdrop-blur-sm">
-                <MusicNoteIcon className="w-3.5 h-3.5 text-primary-500" />
-                <span className="text-[11px] font-semibold tracking-widest uppercase text-primary-600 dark:text-primary-400">
-                  Music Tracker
-                </span>
-              </div>
-
-              <h1 className="text-4xl sm:text-5xl font-black text-primary mb-3 leading-[1.1] flex items-center gap-3 flex-wrap">
-                Bonjour,{' '}
-                <span className="gradient-text">
-                  {user?.firstName || user?.username}
-                </span>
-                <WaveIcon className="w-9 h-9 text-amber-400" />
-              </h1>
-
-              <p className="text-secondary text-base sm:text-lg max-w-md">
-                Votre hub musical personnel
-                {!isLoading && stats.totalArtists > 0 && (
-                  <>
-                    {' '}·{' '}
-                    <span className="font-semibold text-primary">{stats.totalArtists}</span>
-                    {' '}artiste{stats.totalArtists !== 1 ? 's' : ''} suivi{stats.totalArtists !== 1 ? 's' : ''}
-                  </>
-                )}
-              </p>
-            </div>
-
-            {/* ── Quick actions ── */}
-            <div className="flex gap-3 animate-entrance" style={{ animationDelay: '100ms' }}>
-              <button
-                onClick={() => navigate('/artists')}
-                className="flex items-center gap-2 px-5 py-3 bg-white/90 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 rounded-2xl border border-gray-200/80 dark:border-white/10 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 text-sm font-semibold text-primary backdrop-blur-sm cursor-pointer"
-              >
-                <MicrophoneIcon className="w-4 h-4 text-primary-500" />
-                <span>Artistes</span>
-              </button>
-              <button
-                onClick={() => navigate('/releases')}
-                className="btn-primary flex items-center gap-2 px-5 py-3 text-sm rounded-2xl"
-              >
-                <CalendarIcon className="w-4 h-4" />
-                <span>Sorties</span>
-              </button>
-            </div>
+        {/* ── Greeting ── */}
+        <div className="flex items-center justify-between mb-6 animate-entrance">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-primary">
+              {greeting},{' '}
+              <span className="gradient-text">{user?.firstName || user?.username}</span>
+            </h1>
+            <p className="text-secondary text-sm mt-0.5">Voici ce qui se passe dans ta musique</p>
           </div>
+          <button
+            onClick={() => navigate('/releases')}
+            className="hidden sm:flex items-center gap-2 px-4 py-2 btn-secondary text-sm rounded-xl cursor-pointer"
+          >
+            <CalendarIcon className="w-4 h-4" />
+            Calendrier complet
+          </button>
         </div>
 
-        {/* Bottom fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-b from-transparent to-[rgb(var(--bg-primary))] pointer-events-none" />
-      </div>
+        {/* ── BENTO GRID ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-      {/* ══════════ STATISTIQUES ══════════ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-2 pb-4">
-        <SectionHeader Icon={TrendingUpIcon} title="Vos Statistiques" />
+          {/* Bloc gauche — grande cover (prochaine sortie) */}
+          <div className="lg:col-span-2 animate-entrance" style={{ animationDelay: '60ms' }}>
+            <NextReleaseBlock release={nextRelease} isLoading={isLoading} />
+          </div>
 
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <LoadingSpinner />
+          {/* Bloc droite — stats + top artiste */}
+          <div className="flex flex-col gap-4 animate-entrance" style={{ animationDelay: '120ms' }}>
+            <StatsBlock stats={stats} isLoading={isLoading} />
+            <TopArtistBlock favorite={topFavorite} isLoading={isLoading} />
           </div>
-        ) : error ? (
-          <div className="music-card bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800/30">
-            <p className="text-red-500 text-center">{error}</p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-3 gap-5">
-            <StatsCard
-              title="Artistes suivis"
-              icon={MicrophoneIcon}
-              value={stats.totalArtists}
-              subtitle={stats.totalArtists > 0 ? 'dans votre collection' : 'Ajoutez vos premiers artistes'}
-              gradient="from-blue-500 to-indigo-600"
-              glowColor="#6366f1"
-              delay={1}
-            />
-            <StatsCard
-              title="Popularité moyenne"
-              icon={StarIcon}
-              value={stats.totalArtists > 0 ? `${stats.avgPopularity}/100` : '—'}
-              subtitle={stats.totalArtists > 0 ? 'score Spotify moyen' : 'Aucune donnée'}
-              gradient="from-amber-400 to-orange-500"
-              glowColor="#f59e0b"
-              delay={2}
-            />
-            <StatsCard
-              title="Followers cumulés"
-              icon={UsersIcon}
-              value={stats.totalArtists > 0 ? formatFollowers(stats.totalFollowers) : '—'}
-              subtitle={stats.totalArtists > 0 ? 'fans au total' : 'Aucune donnée'}
-              gradient="from-emerald-400 to-green-600"
-              glowColor="#10b981"
-              delay={3}
-            />
+
+          {/* Bloc bas — sorties cette semaine */}
+          {!isLoading && (
+            <div className="lg:col-span-3 animate-entrance" style={{ animationDelay: '180ms' }}>
+              <ThisWeekBlock releases={thisWeekReleases} onSeeAll={() => navigate('/releases')} />
+            </div>
+          )}
+        </div>
+
+        {/* ── Empty state global ── */}
+        {!isLoading && favorites.length === 0 && (
+          <div className="mt-4 rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 p-10 text-center animate-entrance" style={{ animationDelay: '200ms' }}>
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center mx-auto mb-4 shadow-glow">
+              <MicrophoneIcon className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-xl font-black text-primary mb-2">Commencez par suivre des artistes</h2>
+            <p className="text-secondary text-sm max-w-xs mx-auto mb-6">
+              Ajoutez vos artistes favoris pour voir leurs prochaines sorties directement ici.
+            </p>
+            <button
+              onClick={() => navigate('/artists')}
+              className="btn-primary px-6 py-3 text-sm inline-flex items-center gap-2 cursor-pointer"
+            >
+              <MicrophoneIcon className="w-4 h-4" />
+              Découvrir des artistes
+            </button>
           </div>
         )}
       </div>
-
-      {/* ══════════ TOP ARTISTES ══════════ */}
-      {!isLoading && topArtists.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0">
-              <SparkleIcon className="w-4 h-4 text-white" />
-            </div>
-            <h2 className="text-xl font-bold text-primary whitespace-nowrap">Vos Top Artistes</h2>
-            <div className="flex-1 h-px bg-gradient-to-r from-amber-200/50 dark:from-white/10 to-transparent" />
-            <button
-              onClick={() => navigate('/artists')}
-              className="text-sm font-semibold text-primary-500 hover:text-primary-400 transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
-            >
-              Voir tous <span aria-hidden>→</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {topArtists.map((favorite, index) => (
-              <TopArtistCard
-                key={favorite.id}
-                rank={index + 1}
-                name={favorite.artist.name}
-                imageUrl={favorite.artist.imageUrl}
-                popularity={favorite.artist.popularity || 0}
-                spotifyUrl={favorite.artist.spotifyUrl}
-                deezerUrl={favorite.artist.deezerUrl}
-                delay={index + 1}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ══════════ GENRES ══════════ */}
-      {!isLoading && genreDistribution.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <SectionHeader Icon={ChartBarIcon} title="Répartition par Genres" />
-          <GenreDistribution genres={genreDistribution} />
-        </div>
-      )}
-
-      {/* ══════════ PROFIL ══════════ */}
-      {!isLoading && user && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-28 md:pb-16">
-          <SectionHeader Icon={UserIcon} title="Votre Profil" />
-          <ProfileBadges
-            totalArtists={stats.totalArtists}
-            totalGenres={totalGenres}
-            username={user.username}
-            firstName={user.firstName}
-          />
-        </div>
-      )}
     </div>
   );
 };

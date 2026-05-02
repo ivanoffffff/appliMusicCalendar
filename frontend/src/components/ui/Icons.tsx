@@ -401,3 +401,9 @@ export const HomeIcon: React.FC<{ className?: string; filled?: boolean }> = ({ c
     )}
   </svg>
 );
+
+export const ArrowRightIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" {...S}>
+    <path d="M5 12h14M12 5l7 7-7 7" />
+  </svg>
+);
