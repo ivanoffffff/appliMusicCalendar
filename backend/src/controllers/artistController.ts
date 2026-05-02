@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import artistService from '../services/artistService';
 import spotifyService from '../services/spotifyService';
+import prisma from '../config/database';
 
 class ArtistController {
   async searchArtists(req: Request, res: Response) {
@@ -94,6 +95,43 @@ class ArtistController {
         success: false,
         message: 'Erreur lors de la récupération des favoris',
       });
+    }
+  }
+
+  // Récupère un artiste par spotifyId + ses sorties + statut favori
+  async getArtistBySpotifyId(req: Request, res: Response) {
+    try {
+      const { spotifyId } = req.params;
+      const userId = req.user?.userId;
+
+      const artist = await prisma.artist.findUnique({
+        where: { spotifyId },
+        include: {
+          releases: { orderBy: { releaseDate: 'desc' } },
+          favorites: userId ? { where: { userId }, select: { id: true } } : false,
+        },
+      });
+
+      if (!artist) {
+        return res.status(404).json({ success: false, message: 'Artiste introuvable' });
+      }
+
+      const isFavorite = userId ? (artist.favorites as { id: string }[]).length > 0 : false;
+
+      res.json({
+        success: true,
+        data: {
+          ...artist,
+          genres: (() => { try { return JSON.parse(artist.genres); } catch { return []; } })(),
+          spotifyUrl: artist.spotifyId ? `https://open.spotify.com/artist/${artist.spotifyId}` : null,
+          deezerUrl: artist.deezerId ? `https://www.deezer.com/artist/${artist.deezerId}` : null,
+          isFavorite,
+          releases: artist.releases,
+        },
+      });
+    } catch (error) {
+      console.error('Get artist error:', error);
+      res.status(500).json({ success: false, message: 'Erreur lors de la récupération de l\'artiste' });
     }
   }
 

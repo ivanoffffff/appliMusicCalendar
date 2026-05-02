@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage';
 import ArtistsPage from './pages/ArtistsPage';
 import ReleasesPage from './pages/ReleasesPage';
 import NotificationSettingsPage from './pages/NotificationSettingsPage';
+import ArtistDetailPage from './pages/ArtistDetailPage';
 import SpotifyCallbackPage from './pages/SpotifyCallbackPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 import { SpotifyPlayerProvider } from './contexts/SpotifyPlayerContext';
@@ -97,6 +98,14 @@ function AppContent() {
             <NotificationSettingsPage />
           </PrivateRoute>
         } 
+      />
+      <Route
+        path="/artists/:spotifyId"
+        element={
+          <PrivateRoute>
+            <ArtistDetailPage />
+          </PrivateRoute>
+        }
       />
       {/* Callback OAuth Spotify — pas de PrivateRoute car la page gère son propre état */}
       <Route path="/spotify-callback" element={<SpotifyCallbackPage />} />

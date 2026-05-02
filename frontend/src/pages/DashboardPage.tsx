@@ -235,6 +235,7 @@ const StatsBlock: React.FC<{ stats: QuickStats; isLoading: boolean }> = ({ stats
 // ─── Block : Top artiste ──────────────────────────────────────────────────────
 
 const TopArtistBlock: React.FC<{ favorite: FavoriteArtist | undefined; isLoading: boolean }> = ({ favorite, isLoading }) => {
+  const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
 
   if (isLoading) {
@@ -252,13 +253,10 @@ const TopArtistBlock: React.FC<{ favorite: FavoriteArtist | undefined; isLoading
 
   const { artist } = favorite;
   const hasImage = !!artist.imageUrl && !imgError;
-  const url = artist.spotifyUrl || (artist.spotifyId ? `https://open.spotify.com/artist/${artist.spotifyId}` : undefined);
 
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
+    <div
+      onClick={() => artist.spotifyId && navigate(`/artists/${artist.spotifyId}`)}
       className="relative rounded-2xl overflow-hidden block group cursor-pointer h-40"
     >
       {/* Background image */}
@@ -289,7 +287,7 @@ const TopArtistBlock: React.FC<{ favorite: FavoriteArtist | undefined; isLoading
           {formatFollowers(artist.followers || 0)} fans · {artist.popularity || 0}/100
         </p>
       </div>
-    </a>
+    </div>
   );
 };
 

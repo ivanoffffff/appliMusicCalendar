@@ -77,6 +77,11 @@ export const artistService = {
     return response.data;
   },
 
+  async getBySpotifyId(spotifyId: string): Promise<ApiResponse<any>> {
+    const response: AxiosResponse<ApiResponse<any>> = await api.get(`/artists/${spotifyId}`);
+    return response.data;
+  },
+
   async testSpotify(): Promise<ApiResponse<{ spotifyConnected: boolean }>> {
     const response: AxiosResponse<ApiResponse<{ spotifyConnected: boolean }>> = await api.get('/artists/test-spotify');
     return response.data;

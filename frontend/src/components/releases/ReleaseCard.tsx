@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Release } from '../../types';
 import { SpotifyIcon, DeezerIcon } from '../common/PlatformIcons';
 import { MusicNoteIcon, DiscIcon, VinylIcon, CalendarIcon, ClockIcon } from '../ui/Icons';
@@ -28,6 +29,7 @@ const PauseIcon = () => (
 );
 
 const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, onPlay, isPlaying = false }) => {
+  const navigate = useNavigate();
   const [imageError, setImageError] = useState(false);
 
   const config     = TYPE_CONFIG[release.releaseType] ?? FALLBACK_CONFIG;
@@ -148,7 +150,12 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, onPlay, isPlaying = 
         <h3 className={`font-bold truncate mb-0.5 transition-colors duration-200 text-sm group-hover:text-primary-600 dark:group-hover:text-primary-400 ${isPlaying ? 'text-[#1db954]' : 'text-primary'}`}>
           {release.name}
         </h3>
-        <p className="text-xs text-secondary truncate mb-2">{release.artist.name}</p>
+        <p
+          className="text-xs text-secondary truncate mb-2 hover:text-primary-500 dark:hover:text-primary-400 transition-colors cursor-pointer"
+          onClick={e => { e.stopPropagation(); release.artist.spotifyId && navigate(`/artists/${release.artist.spotifyId}`); }}
+        >
+          {release.artist.name}
+        </p>
 
         <div className="flex items-center gap-2 text-[11px] text-secondary">
           <span className="flex items-center gap-1">

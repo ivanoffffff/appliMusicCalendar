@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Artist } from '../../types';
 import { SpotifyIcon, DeezerIcon } from '../common/PlatformIcons';
 import { MicrophoneIcon, FireIcon, StarIcon, HeartIcon, UsersIcon } from '../ui/Icons';
@@ -20,6 +21,7 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
   isFavorite = false,
   onToggleFavorite,
 }) => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -48,7 +50,10 @@ const ArtistCard: React.FC<ArtistCardProps> = ({
   };
 
   return (
-    <div className="group relative rounded-2xl overflow-hidden bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 shadow-card dark:shadow-none hover:shadow-card-hover dark:hover:shadow-glow hover:-translate-y-1.5 transition-all duration-300 animate-entrance dark:backdrop-blur-sm">
+    <div
+      className="group relative rounded-2xl overflow-hidden bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 shadow-card dark:shadow-none hover:shadow-card-hover dark:hover:shadow-glow hover:-translate-y-1.5 transition-all duration-300 animate-entrance dark:backdrop-blur-sm cursor-pointer"
+      onClick={() => artist.spotifyId && navigate(`/artists/${artist.spotifyId}`)}
+    >
 
       {/* ── Image ── */}
       <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/30 dark:to-accent-900/30">
