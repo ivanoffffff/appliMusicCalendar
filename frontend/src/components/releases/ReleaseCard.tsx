@@ -148,7 +148,17 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, onPlay, isPlaying = 
       {/* ── Infos ── */}
       <div className="p-3">
         <h3 className={`font-bold truncate mb-0.5 transition-colors duration-200 text-sm group-hover:text-primary-600 dark:group-hover:text-primary-400 ${isPlaying ? 'text-[#1db954]' : 'text-primary'}`}>
-          {release.name}
+          {release.spotifyUrl ? (
+            <a
+              href={release.spotifyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              className="hover:underline"
+            >
+              {release.name}
+            </a>
+          ) : release.name}
         </h3>
         <p
           className="text-xs text-secondary truncate mb-2 hover:text-primary-500 dark:hover:text-primary-400 transition-colors cursor-pointer"
