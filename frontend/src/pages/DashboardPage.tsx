@@ -4,16 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { artistService, releaseService } from '../services/api';
 import type { FavoriteArtist, Release } from '../types';
 import Header from '../components/ui/Header';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { SpotifyIcon, DeezerIcon } from '../components/common/PlatformIcons';
+import ReleaseCard from '../components/releases/ReleaseCard';
+import { useSpotifyPlayer } from '../contexts/SpotifyPlayerContext';
 import {
   MusicNoteIcon,
   MicrophoneIcon,
   CalendarIcon,
   StarIcon,
-  UsersIcon,
   ChartBarIcon,
-  ClockIcon,
   SparkleIcon,
   FireIcon,
   ArrowRightIcon,
@@ -42,7 +40,14 @@ const TYPE_GRADIENT: Record<string, string> = {
 
 // ─── Block : Sorties récentes (bloc principal) ────────────────────────────────
 
-const RecentReleasesBlock: React.FC<{ releases: Release[]; isLoading: boolean; onSeeAll: () => void }> = ({ releases, isLoading, onSeeAll }) => {
+const RecentReleasesBlock: React.FC<{
+  releases: Release[];
+  isLoading: boolean;
+  onSeeAll: () => void;
+  onPlay?: (spotifyId: string) => void;
+  currentAlbumId?: string | null;
+  isPlaying?: boolean;
+}> = ({ releases, isLoading, onSeeAll, onPlay, currentAlbumId, isPlaying }) => {
   if (isLoading) {
     return (
       <div className="h-full min-h-[300px] rounded-2xl bg-white/60 dark:bg-white/5 border border-gray-100 dark:border-white/8 animate-pulse" />
@@ -87,81 +92,49 @@ const RecentReleasesBlock: React.FC<{ releases: Release[]; isLoading: boolean; o
         </button>
       </div>
 
-      {/* Grille de cards */}
+      {/* Grille de ReleaseCards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1">
         {releases.slice(0, 6).map((release, i) => (
-          <RecentReleaseCard key={release.id} release={release} delay={i} />
+          <div key={release.id} className="animate-entrance" style={{ animationDelay: `${i * 40}ms` }}>
+            <ReleaseCard
+              release={release}
+              onPlay={onPlay}
+              isPlaying={isPlaying && currentAlbumId === release.spotifyId}
+            />
+          </div>
         ))}
       </div>
     </div>
   );
 };
 
-const RecentReleaseCard: React.FC<{ release: Release; delay: number }> = ({ release, delay }) => {
-  const [imgError, setImgError] = useState(false);
-  const url = release.spotifyUrl || release.deezerUrl;
-  const gradient = TYPE_GRADIENT[release.releaseType] ?? TYPE_GRADIENT.SINGLE;
-
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group rounded-xl overflow-hidden border border-gray-100 dark:border-white/8 hover:border-primary-200 dark:hover:border-primary-500/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer animate-entrance block"
-      style={{ animationDelay: `${delay * 40}ms` }}
-    >
-      {/* Cover */}
-      <div className="relative aspect-square bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/30 dark:to-accent-900/30 overflow-hidden">
-        {release.imageUrl && !imgError ? (
-          <img
-            src={release.imageUrl}
-            alt={release.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <MusicNoteIcon className="w-8 h-8 text-primary-400" />
-          </div>
-        )}
-        <span className={`absolute bottom-1.5 left-1.5 text-[9px] font-black px-1.5 py-0.5 rounded-full bg-gradient-to-r ${gradient} text-white shadow-sm`}>
-          {TYPE_LABEL[release.releaseType]}
-        </span>
-      </div>
-      {/* Info */}
-      <div className="p-2">
-        <p className="text-xs font-bold text-primary truncate group-hover:text-primary-500 dark:group-hover:text-primary-400 transition-colors">{release.name}</p>
-        <p className="text-[11px] text-secondary truncate">{release.artist.name}</p>
-      </div>
-    </a>
-  );
-};
-
 // ─── Block : Prochaine sortie (bannière compacte) ─────────────────────────────
 
 const NextReleaseBanner: React.FC<{ release: Release }> = ({ release }) => {
+  const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
   const days     = daysUntil(release.releaseDate);
   const gradient = TYPE_GRADIENT[release.releaseType] ?? TYPE_GRADIENT.SINGLE;
   const url      = release.spotifyUrl || release.deezerUrl;
 
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 p-4 flex items-center gap-4 hover:border-primary-200 dark:hover:border-primary-500/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer dark:backdrop-blur-sm group"
-    >
-      {/* Cover */}
-      <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/30 dark:to-accent-900/30">
+    <div className="rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 p-4 flex items-center gap-4 dark:backdrop-blur-sm group">
+      {/* Cover — ouvre Spotify/Deezer */}
+      <a
+        href={url ?? undefined}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/30 dark:to-accent-900/30 cursor-pointer"
+        onClick={e => !url && e.preventDefault()}
+      >
         {release.imageUrl && !imgError ? (
-          <img src={release.imageUrl} alt={release.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={() => setImgError(true)} />
+          <img src={release.imageUrl} alt={release.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" onError={() => setImgError(true)} />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <MusicNoteIcon className="w-6 h-6 text-primary-400" />
           </div>
         )}
-      </div>
+      </a>
 
       {/* Info */}
       <div className="flex-1 min-w-0">
@@ -172,7 +145,15 @@ const NextReleaseBanner: React.FC<{ release: Release }> = ({ release }) => {
           <span className="text-[10px] font-semibold text-secondary uppercase tracking-wider">Prochaine sortie</span>
         </div>
         <p className="text-sm font-bold text-primary truncate">{release.name}</p>
-        <p className="text-xs text-secondary truncate">{release.artist.name} · {formatDate(release.releaseDate)}</p>
+        <p className="text-xs text-secondary truncate">
+          <span
+            className="hover:text-primary-500 dark:hover:text-primary-400 transition-colors cursor-pointer"
+            onClick={() => release.artist.spotifyId && navigate(`/artists/${release.artist.spotifyId}`)}
+          >
+            {release.artist.name}
+          </span>
+          {' · '}{formatDate(release.releaseDate)}
+        </p>
       </div>
 
       {/* Countdown */}
@@ -180,7 +161,7 @@ const NextReleaseBanner: React.FC<{ release: Release }> = ({ release }) => {
         <p className="text-xl font-black leading-none">{days}</p>
         <p className="text-[9px] font-semibold opacity-80">jour{days > 1 ? 's' : ''}</p>
       </div>
-    </a>
+    </div>
   );
 };
 
@@ -297,6 +278,7 @@ const TopArtistBlock: React.FC<{ favorite: FavoriteArtist | undefined; isLoading
 const DashboardPage: React.FC = () => {
   const { user }   = useAuth();
   const navigate   = useNavigate();
+  const { isReady, playAlbum, currentAlbumId, isPlaying } = useSpotifyPlayer();
 
   const [favorites, setFavorites] = useState<FavoriteArtist[]>([]);
   const [releases,  setReleases]  = useState<Release[]>([]);
@@ -369,6 +351,15 @@ const DashboardPage: React.FC = () => {
     totalGenres,
   };
 
+  const handlePlay = (spotifyId: string) => {
+    if (!isReady) return;
+    const queue = thisWeekReleases
+      .filter(r => r.spotifyId && new Date(r.releaseDate) <= new Date())
+      .map(r => r.spotifyId!);
+    const index = queue.indexOf(spotifyId);
+    playAlbum(spotifyId, queue, index);
+  };
+
   const greetingHour = new Date().getHours();
   const greeting = greetingHour < 12 ? 'Bonjour' : greetingHour < 18 ? 'Bon après-midi' : 'Bonsoir';
 
@@ -406,6 +397,9 @@ const DashboardPage: React.FC = () => {
               releases={thisWeekReleases}
               isLoading={isLoading}
               onSeeAll={() => navigate('/releases')}
+              onPlay={isReady ? handlePlay : undefined}
+              currentAlbumId={currentAlbumId}
+              isPlaying={isPlaying}
             />
           </div>
 
