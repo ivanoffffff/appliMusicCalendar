@@ -126,7 +126,15 @@ class ArtistController {
           spotifyUrl: artist.spotifyId ? `https://open.spotify.com/artist/${artist.spotifyId}` : null,
           deezerUrl: artist.deezerId ? `https://www.deezer.com/artist/${artist.deezerId}` : null,
           isFavorite,
-          releases: artist.releases,
+          releases: artist.releases.map(r => ({
+            ...r,
+            artist: {
+              id: artist.id,
+              name: artist.name,
+              spotifyId: artist.spotifyId,
+              imageUrl: artist.imageUrl,
+            },
+          })),
         },
       });
     } catch (error) {
