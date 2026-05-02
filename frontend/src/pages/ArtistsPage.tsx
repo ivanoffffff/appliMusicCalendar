@@ -9,26 +9,25 @@ import { HeartIcon, SearchIcon, MicrophoneIcon, AlertIcon, FrownIcon, MusicNoteI
 type Tab = 'favorites' | 'search';
 
 // ─── Pill tab switcher ─────────────────────────────────────────────────────
-const TABS: { id: Tab; Icon: React.FC<{ className?: string }>; label: string }[] = [
+const TABS: { id: Tab; Icon: React.FC<{ className?: string; filled?: boolean }>; label: string }[] = [
   { id: 'favorites', Icon: ({ className }) => <HeartIcon className={className} filled />, label: 'Mes favoris' },
   { id: 'search',    Icon: SearchIcon, label: 'Rechercher' },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────
 const ArtistsPage: React.FC = () => {
-  const [searchQuery, setSearchQuery]         = useState('');
-  const [searchResults, setSearchResults]     = useState<Artist[]>([]);
-  const [favorites, setFavorites]             = useState<FavoriteArtist[]>([]);
-  const [isSearching, setIsSearching]         = useState(false);
+  const [searchQuery, setSearchQuery]               = useState('');
+  const [searchResults, setSearchResults]           = useState<Artist[]>([]);
+  const [favorites, setFavorites]                   = useState<FavoriteArtist[]>([]);
+  const [isSearching, setIsSearching]               = useState(false);
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(true);
-  const [error, setError]                     = useState('');
-  const [activeTab, setActiveTab]             = useState<Tab>('favorites');
+  const [error, setError]                           = useState('');
+  const [activeTab, setActiveTab]                   = useState<Tab>('favorites');
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadFavorites(); }, []);
 
-  // Focus l'input quand on passe à l'onglet recherche
   useEffect(() => {
     if (activeTab === 'search') {
       setTimeout(() => searchInputRef.current?.focus(), 150);
@@ -84,35 +83,35 @@ const ArtistsPage: React.FC = () => {
   const isArtistFavorite = (artist: Artist) =>
     favorites.some(f => f.artist.spotifyId === artist.spotifyId);
 
-  // ── Artistes favoris normalisés en Artist ────────────────────────────
   const favoriteArtists: Artist[] = favorites.map(f => ({
-    spotifyId: f.artist.spotifyId!,
-    deezerId:  f.artist.deezerId,
-    name:      f.artist.name,
-    genres:    f.artist.genres,
-    imageUrl:  f.artist.imageUrl || undefined,
+    spotifyId:  f.artist.spotifyId!,
+    deezerId:   f.artist.deezerId,
+    name:       f.artist.name,
+    genres:     f.artist.genres,
+    imageUrl:   f.artist.imageUrl || undefined,
     popularity: f.artist.popularity || 0,
     followers:  f.artist.followers || 0,
     spotifyUrl: f.artist.spotifyUrl || `https://open.spotify.com/artist/${f.artist.spotifyId}`,
     deezerUrl:  f.artist.deezerUrl,
   }));
 
-  // ─────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-primary">
+    <div className="min-h-screen mesh-bg">
       <Header />
 
-      {/* ══════════ STICKY PILL TABS ══════════ */}
-      <div className="sticky top-14 md:top-16 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-100 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center gap-2">
+      {/* ══════════ STICKY TABS ══════════ */}
+      <div className="sticky top-14 md:top-16 z-40">
+        <div className="absolute inset-0 bg-white/85 dark:bg-[#0a0a1e]/85 backdrop-blur-xl border-b border-gray-100/60 dark:border-white/5" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center gap-2">
           {TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
                 activeTab === tab.id
-                  ? 'bg-primary-500 text-white shadow-md'
-                  : 'text-secondary hover:text-primary hover:bg-gray-100 dark:hover:bg-slate-800'
+                  ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-md'
+                  : 'text-secondary hover:text-primary hover:bg-gray-100/80 dark:hover:bg-white/5'
               }`}
             >
               <tab.Icon className="w-4 h-4" />
@@ -138,28 +137,32 @@ const ArtistsPage: React.FC = () => {
         <div className="animate-entrance">
 
           {/* Hero search */}
-          <div className="relative overflow-hidden border-b border-gray-100 dark:border-slate-800/60">
-            <div className="absolute inset-0 bg-gradient-to-br from-white via-blue-50/20 to-purple-50/20 dark:from-slate-900 dark:via-blue-950/15 dark:to-purple-950/10" />
+          <div className="relative overflow-hidden">
+            {/* Orbs */}
             <div
-              className="absolute -top-20 right-0 w-72 h-72 rounded-full blur-3xl opacity-20 dark:opacity-10 pointer-events-none"
-              style={{ background: 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)' }}
+              className="absolute -top-20 right-0 w-72 h-72 rounded-full blur-3xl opacity-10 dark:opacity-15 pointer-events-none animate-orb-float-1"
+              style={{ background: 'radial-gradient(circle, #818cf8 0%, transparent 70%)' }}
+            />
+            <div
+              className="absolute bottom-0 left-0 w-48 h-48 rounded-full blur-3xl opacity-8 dark:opacity-10 pointer-events-none animate-orb-float-2"
+              style={{ background: 'radial-gradient(circle, #a78bfa 0%, transparent 70%)' }}
             />
 
-            <div className="relative max-w-2xl mx-auto px-4 sm:px-6 py-10 text-center">
-              <div className="flex justify-center mb-3 animate-bounce-subtle">
-                <MicrophoneIcon className="w-10 h-10 text-primary-500" />
+            <div className="relative max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-14 text-center">
+              <div className="flex justify-center mb-4 animate-bounce-subtle">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-glow">
+                  <MicrophoneIcon className="w-8 h-8 text-white" />
+                </div>
               </div>
-              <h2 className="text-2xl font-bold text-primary mb-1">Découvrez des artistes</h2>
-              <p className="text-secondary text-sm mb-7">
+              <h2 className="text-3xl font-black text-primary mb-2">Découvrez des artistes</h2>
+              <p className="text-secondary text-sm mb-8">
                 Recherchez sur Spotify et ajoutez vos favoris en un clic
               </p>
 
-              {/* Barre de recherche */}
+              {/* Search bar */}
               <form onSubmit={handleSearch} className="relative flex items-center">
                 <div className="absolute left-4 text-secondary pointer-events-none">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+                  <SearchIcon className="w-5 h-5" />
                 </div>
                 <input
                   ref={searchInputRef}
@@ -167,13 +170,13 @@ const ArtistsPage: React.FC = () => {
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Drake, Taylor Swift, Daft Punk…"
-                  className="w-full pl-12 pr-36 py-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-card focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-primary placeholder:text-secondary transition-all duration-300 text-sm"
+                  className="w-full pl-12 pr-36 py-4 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl shadow-card dark:shadow-none dark:backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50 dark:focus:border-primary-500/30 text-primary placeholder:text-secondary transition-all duration-200 text-sm font-medium"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => { setSearchQuery(''); setSearchResults([]); }}
-                    className="absolute right-28 text-secondary hover:text-primary transition-colors p-1"
+                    className="absolute right-28 text-secondary hover:text-primary transition-colors p-1 cursor-pointer"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -185,14 +188,14 @@ const ArtistsPage: React.FC = () => {
                   disabled={isSearching || !searchQuery.trim()}
                   className="absolute right-2 btn-primary px-5 py-2 text-sm rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSearching ? <LoadingSpinner size="sm" /> : 'Rechercher'}
+                  {isSearching ? <LoadingSpinner size="sm" /> : 'Chercher'}
                 </button>
               </form>
             </div>
           </div>
 
-          {/* Contenu recherche */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24 md:pb-10">
+          {/* Search content */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-28 md:pb-16">
 
             {error && (
               <div className="mb-6 flex items-center gap-3 bg-red-50 dark:bg-red-900/15 border border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-entrance">
@@ -211,11 +214,13 @@ const ArtistsPage: React.FC = () => {
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h3 className="text-lg font-bold text-primary">Résultats</h3>
-                    <p className="text-xs text-secondary mt-0.5">{searchResults.length} artiste{searchResults.length > 1 ? 's' : ''} trouvé{searchResults.length > 1 ? 's' : ''}</p>
+                    <p className="text-xs text-secondary mt-0.5">
+                      {searchResults.length} artiste{searchResults.length > 1 ? 's' : ''} trouvé{searchResults.length > 1 ? 's' : ''}
+                    </p>
                   </div>
                   <button
                     onClick={() => setSearchResults([])}
-                    className="text-xs text-secondary hover:text-primary transition-colors flex items-center gap-1"
+                    className="text-xs text-secondary hover:text-primary transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -250,13 +255,14 @@ const ArtistsPage: React.FC = () => {
               </div>
 
             ) : (
-              /* État vide — suggestions */
               <div className="text-center py-16">
-                <div className="flex justify-center mb-4 animate-bounce-subtle">
-                  <MusicNoteIcon className="w-12 h-12 text-primary-500" />
+                <div className="flex justify-center mb-5 animate-bounce-subtle">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/30 dark:to-accent-900/30 flex items-center justify-center">
+                    <MusicNoteIcon className="w-8 h-8 text-primary-500" />
+                  </div>
                 </div>
-                <p className="text-primary font-semibold mb-1">Prêt à explorer ?</p>
-                <p className="text-secondary text-sm mb-6">Tapez le nom d'un artiste dans la barre ci-dessus</p>
+                <p className="text-primary font-bold mb-1 text-lg">Prêt à explorer ?</p>
+                <p className="text-secondary text-sm mb-8">Tapez le nom d'un artiste dans la barre ci-dessus</p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {['Drake', 'Beyoncé', 'Daft Punk', 'Taylor Swift', 'The Weeknd', 'Kendrick Lamar'].map(name => (
                     <button
@@ -265,7 +271,7 @@ const ArtistsPage: React.FC = () => {
                         setSearchQuery(name);
                         setTimeout(() => searchInputRef.current?.form?.requestSubmit(), 50);
                       }}
-                      className="px-3 py-1.5 rounded-full text-sm bg-gray-100 dark:bg-slate-800 text-secondary hover:text-primary hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-200"
+                      className="px-4 py-2 rounded-full text-sm bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-secondary hover:text-primary hover:border-primary-300 dark:hover:border-primary-500/40 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition-all duration-200 cursor-pointer font-medium"
                     >
                       {name}
                     </button>
@@ -280,7 +286,7 @@ const ArtistsPage: React.FC = () => {
       {/* ══════════ FAVORITES TAB ══════════ */}
       {activeTab === 'favorites' && (
         <div className="animate-entrance">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24 md:pb-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-28 md:pb-16">
 
             {isLoadingFavorites ? (
               <div className="flex flex-col items-center justify-center py-20">
@@ -293,15 +299,15 @@ const ArtistsPage: React.FC = () => {
                 {/* Header favoris */}
                 <div className="flex items-center gap-3 mb-6">
                   <div>
-                    <h2 className="text-xl font-bold text-primary">Mes artistes favoris</h2>
+                    <h2 className="text-xl font-black text-primary">Mes artistes favoris</h2>
                     <p className="text-xs text-secondary mt-0.5">
                       {favoriteArtists.length} artiste{favoriteArtists.length !== 1 ? 's' : ''} suivi{favoriteArtists.length !== 1 ? 's' : ''}
                     </p>
                   </div>
-                  <div className="flex-1 h-px bg-gradient-to-r from-gray-200 dark:from-slate-700 to-transparent" />
+                  <div className="flex-1 h-px bg-gradient-to-r from-primary-200/50 dark:from-white/10 to-transparent" />
                   <button
                     onClick={() => setActiveTab('search')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors shadow-sm shrink-0"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold btn-primary shrink-0"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -329,12 +335,12 @@ const ArtistsPage: React.FC = () => {
               </>
 
             ) : (
-              /* Empty state favoris */
-              <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/30 dark:to-accent-900/30 flex items-center justify-center mb-6 shadow-card">
+              /* Empty state */
+              <div className="flex flex-col items-center justify-center py-24">
+                <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-500/10 to-accent-500/10 dark:from-primary-500/20 dark:to-accent-500/20 flex items-center justify-center mb-6 border border-primary-200/30 dark:border-primary-500/20">
                   <MicrophoneIcon className="w-12 h-12 text-primary-500" />
                 </div>
-                <h3 className="text-xl font-bold text-primary mb-2">Aucun artiste favori</h3>
+                <h3 className="text-xl font-black text-primary mb-2">Aucun artiste favori</h3>
                 <p className="text-secondary text-sm text-center max-w-xs mb-8">
                   Ajoutez vos artistes préférés pour suivre leurs nouvelles sorties en temps réel.
                 </p>

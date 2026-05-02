@@ -120,7 +120,7 @@ const MiniPlayer: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-100 dark:border-slate-800 px-4 py-3">
+      <div className="bg-white/95 dark:bg-[#0a0a1e]/95 backdrop-blur-xl border-t border-gray-100 dark:border-white/5 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center gap-4">
 
           {/* ── Pochette + info piste ── */}

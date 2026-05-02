@@ -45,7 +45,7 @@ const GenreDistribution: React.FC<GenreDistributionProps> = ({ genres }) => {
     <div className="grid md:grid-cols-5 gap-5">
 
       {/* ── Barres horizontales (3/5 de la largeur) ── */}
-      <div className="md:col-span-3 bg-white dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700/50 rounded-2xl p-6 shadow-card">
+      <div className="md:col-span-3 bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 rounded-2xl dark:backdrop-blur-sm p-6 shadow-card">
         <div className="mb-5">
           <h3 className="text-base font-bold text-primary">Genres musicaux</h3>
           <p className="text-xs text-secondary mt-0.5">
@@ -76,7 +76,7 @@ const GenreDistribution: React.FC<GenreDistributionProps> = ({ genres }) => {
                 </div>
 
                 {/* Barre */}
-                <div className="h-2.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-2.5 bg-gray-100 dark:bg-white/8 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-700 ease-out"
                     style={{
@@ -96,7 +96,7 @@ const GenreDistribution: React.FC<GenreDistributionProps> = ({ genres }) => {
       <div className="md:col-span-2 flex flex-col gap-5">
 
         {/* Top 3 podium */}
-        <div className="bg-white dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700/50 rounded-2xl p-6 shadow-card flex-1">
+        <div className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 rounded-2xl dark:backdrop-blur-sm p-6 shadow-card flex-1">
           <h3 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
             <TrophyIcon className="w-5 h-5 text-amber-500" />
             Top Genres

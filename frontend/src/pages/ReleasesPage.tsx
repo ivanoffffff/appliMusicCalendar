@@ -178,7 +178,7 @@ const ReleasesPage: React.FC = () => {
   // ─────────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-primary">
+      <div className="min-h-screen mesh-bg">
         <Header />
         <div className="flex flex-col items-center justify-center py-20">
           <LoadingSpinner size="xl" type="musical" />
@@ -189,15 +189,19 @@ const ReleasesPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-primary">
+    <div className="min-h-screen mesh-bg">
       <Header />
 
       {/* ══════════ HERO ══════════ */}
-      <div className="relative overflow-hidden border-b border-gray-100 dark:border-slate-800/60">
-        <div className="absolute inset-0 bg-gradient-to-br from-white via-purple-50/20 to-blue-50/20 dark:from-slate-900 dark:via-purple-950/15 dark:to-blue-950/10" />
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-primary-50/30 to-accent-50/20 dark:via-primary-900/10 dark:to-accent-900/8 pointer-events-none" />
         <div
-          className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl opacity-20 dark:opacity-10 pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)' }}
+          className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl opacity-10 dark:opacity-12 pointer-events-none animate-orb-float-1"
+          style={{ background: 'radial-gradient(circle, #818cf8 0%, transparent 70%)' }}
+        />
+        <div
+          className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full blur-3xl opacity-8 dark:opacity-10 pointer-events-none animate-orb-float-2"
+          style={{ background: 'radial-gradient(circle, #a78bfa 0%, transparent 70%)' }}
         />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
@@ -217,12 +221,12 @@ const ReleasesPage: React.FC = () => {
 
             {/* Texte + quick stats */}
             <div className="animate-entrance">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-widest uppercase text-accent-600 dark:text-accent-400 bg-accent-50 dark:bg-accent-900/20 px-3 py-1 rounded-full border border-accent-100 dark:border-accent-800/30">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-widest uppercase text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10 px-3 py-1 rounded-full border border-primary-100 dark:border-primary-500/20">
                   <CalendarIcon className="w-3.5 h-3.5" /> Sorties musicales
                 </span>
               </div>
-              <h1 className="text-3xl font-bold text-primary mb-1 leading-tight">
+              <h1 className="text-3xl sm:text-4xl font-black text-primary mb-1 leading-tight">
                 Mon <span className="gradient-text">Calendrier</span>
               </h1>
               {releases.length > 0 && (
@@ -262,13 +266,13 @@ const ReleasesPage: React.FC = () => {
       </div>
 
       {/* ══════════ CONTRÔLES STICKY ══════════ */}
-      <div className="sticky top-14 md:top-16 z-40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-gray-100 dark:border-slate-800">
+      <div className="sticky top-14 md:top-16 z-40 bg-white/85 dark:bg-[#0a0a1e]/85 backdrop-blur-xl border-b border-gray-100/60 dark:border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
 
             <div className="flex flex-wrap items-center gap-2">
               {/* Toggle Vue */}
-              <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl">
+              <div className="flex gap-1 bg-gray-100/80 dark:bg-white/5 p-1 rounded-xl border border-gray-200/50 dark:border-white/5">
                 {([
                   { id: 'list',     Icon: ListIcon,     label: 'Liste' },
                   { id: 'calendar', Icon: CalendarIcon, label: 'Calendrier' },
@@ -290,7 +294,7 @@ const ReleasesPage: React.FC = () => {
 
               {/* Filtres (liste uniquement) */}
               {view === 'list' && (
-                <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl">
+                <div className="flex gap-1 bg-gray-100/80 dark:bg-white/5 p-1 rounded-xl border border-gray-200/50 dark:border-white/5">
                   {([
                     { id: 'all',      label: 'Toutes',   icon: null },
                     { id: 'upcoming', label: 'À venir',  icon: <ClockIcon className="w-3 h-3" /> },

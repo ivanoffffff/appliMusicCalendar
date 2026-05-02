@@ -9,8 +9,8 @@ import { SunIcon, MoonIcon, HomeIcon, MicrophoneIcon, CalendarIcon } from './Ico
 // ─── Config navigation ────────────────────────────────────────────────────────
 const NAV_DESKTOP = [
   { path: '/dashboard', label: 'Dashboard' },
-  { path: '/artists',   label: 'Artistes'  },
-  { path: '/releases',  label: 'Calendrier'},
+  { path: '/artists',   label: 'Artistes'   },
+  { path: '/releases',  label: 'Calendrier' },
 ];
 
 const NAV_MOBILE = [
@@ -44,21 +44,30 @@ const Header: React.FC = () => {
   return (
     <>
       {/* ══════════ HEADER DESKTOP ══════════ */}
-      <header className="sticky top-0 z-50 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 animate-slide-down">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <header className="sticky top-0 z-50 animate-slide-down">
+        {/* Glass background */}
+        <div className="absolute inset-0 bg-white/80 dark:bg-[#0a0a1e]/85 backdrop-blur-xl border-b border-gray-100/80 dark:border-white/5" />
+
+        {/* Subtle gradient line at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary-400/30 dark:via-primary-500/20 to-transparent" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14 md:h-16 gap-4">
 
             {/* ── Logo ── */}
             <button
               onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2.5 group shrink-0"
+              className="flex items-center gap-2.5 group shrink-0 cursor-pointer"
             >
-              <img
-                src={logo}
-                alt="Music Tracker"
-                className="w-8 h-8 group-hover:scale-110 transition-transform duration-300"
-              />
-              <span className="text-base font-bold gradient-text hidden sm:block group-hover:opacity-80 transition-opacity duration-200">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary-500/20 dark:bg-primary-400/25 rounded-lg blur-md group-hover:blur-lg transition-all duration-300" />
+                <img
+                  src={logo}
+                  alt="Music Tracker"
+                  className="relative w-8 h-8 group-hover:scale-110 transition-transform duration-300"
+                />
+              </div>
+              <span className="text-base font-black gradient-text hidden sm:block">
                 Music Tracker
               </span>
             </button>
@@ -71,16 +80,15 @@ const Header: React.FC = () => {
                   <button
                     key={item.path}
                     onClick={() => navigate(item.path)}
-                    className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    className={`relative px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
                       active
-                        ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                        : 'text-secondary hover:text-primary hover:bg-gray-100 dark:hover:bg-slate-800'
+                        ? 'text-primary-600 dark:text-primary-300 bg-primary-50 dark:bg-primary-500/10'
+                        : 'text-secondary hover:text-primary hover:bg-gray-100/80 dark:hover:bg-white/5'
                     }`}
                   >
                     {item.label}
-                    {/* Indicateur actif — point en bas */}
                     {active && (
-                      <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary-500" />
+                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary-500 dark:bg-primary-400" />
                     )}
                   </button>
                 );
@@ -90,19 +98,22 @@ const Header: React.FC = () => {
             {/* ── Actions droite ── */}
             <div className="flex items-center gap-2 shrink-0">
 
-              {/* Bouton thème */}
+              {/* Theme toggle */}
               <button
                 onClick={toggleTheme}
-                className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-slate-800 text-secondary hover:text-primary hover:bg-gray-200 dark:hover:bg-slate-700 transition-all duration-200 hover:scale-105"
+                className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100/80 dark:bg-white/5 hover:bg-gray-200/80 dark:hover:bg-white/10 text-secondary hover:text-primary transition-all duration-200 cursor-pointer border border-transparent dark:border-white/5"
                 title={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
               >
-                {theme === 'dark' ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
+                {theme === 'dark'
+                  ? <SunIcon className="w-4 h-4 text-amber-400" />
+                  : <MoonIcon className="w-4 h-4" />
+                }
               </button>
 
-              {/* Nom + avatar */}
+              {/* User info + avatar */}
               <div className="flex items-center gap-2.5">
                 <div className="hidden md:block text-right leading-tight">
-                  <p className="text-sm font-semibold text-primary">
+                  <p className="text-sm font-bold text-primary">
                     {user?.firstName || user?.username}
                   </p>
                   <p className="text-[11px] text-secondary">Connecté</p>
@@ -110,12 +121,14 @@ const Header: React.FC = () => {
 
                 <button
                   onClick={() => navigate('/settings/notifications')}
-                  className="relative w-9 h-9 bg-gradient-to-br from-primary-400 to-accent-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md hover:shadow-glow hover:scale-105 transition-all duration-200"
+                  className="relative w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-black shadow-md hover:shadow-glow hover:scale-105 transition-all duration-200 cursor-pointer"
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  }}
                   title="Paramètres notifications"
                 >
                   {initials}
-                  {/* Indicateur online */}
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-white dark:border-slate-900 rounded-full" />
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-white dark:border-[#0a0a1e] rounded-full" />
                 </button>
               </div>
             </div>
@@ -124,9 +137,8 @@ const Header: React.FC = () => {
       </header>
 
       {/* ══════════ BOTTOM NAV MOBILE ══════════ */}
-      {/* Remonte au-dessus du MiniPlayer (~68 px) quand le lecteur est actif */}
-      <nav className={`md:hidden fixed left-4 right-4 z-50 transition-all duration-300 ${hasPlayer ? 'bottom-[72px]' : 'bottom-4'}`}>
-        <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-gray-200 dark:border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden">
+      <nav className={`md:hidden fixed left-4 right-4 z-50 transition-all duration-300 ${hasPlayer ? 'bottom-[76px]' : 'bottom-4'}`}>
+        <div className="bg-white/92 dark:bg-[#0a0a1e]/92 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-white/60 dark:border-white/8">
           <div className="grid grid-cols-3 h-16">
             {NAV_MOBILE.map(({ path, label, Icon }) => {
               const active = isActive(path);
@@ -134,20 +146,20 @@ const Header: React.FC = () => {
                 <button
                   key={path}
                   onClick={() => navigate(path)}
-                  className={`relative flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
-                    active ? 'text-primary-500' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
+                  className={`relative flex flex-col items-center justify-center gap-1 transition-all duration-200 cursor-pointer ${
+                    active
+                      ? 'text-primary-500 dark:text-primary-400'
+                      : 'text-gray-400 dark:text-slate-600 hover:text-gray-600 dark:hover:text-slate-400'
                   }`}
                 >
-                  {/* Pill indicatrice en haut */}
                   {active && (
                     <span className="absolute top-0 left-6 right-6 h-[2.5px] rounded-full bg-gradient-to-r from-primary-500 to-accent-500" />
                   )}
-
                   <span className={`transition-transform duration-200 ${active ? 'scale-110' : ''}`}>
                     <Icon className="w-6 h-6" filled={active} />
                   </span>
-                  <span className={`text-[10px] font-semibold tracking-wide leading-none ${
-                    active ? 'text-primary-500' : 'text-gray-400 dark:text-slate-500'
+                  <span className={`text-[10px] font-bold tracking-wide leading-none ${
+                    active ? 'text-primary-500 dark:text-primary-400' : 'text-gray-400 dark:text-slate-500'
                   }`}>
                     {label}
                   </span>

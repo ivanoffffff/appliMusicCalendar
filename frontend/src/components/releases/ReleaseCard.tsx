@@ -45,7 +45,7 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, onPlay, isPlaying = 
   const canPlay = !!onPlay && !!release.spotifyId && !isUpcoming;
 
   return (
-    <div className={`group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700/50 shadow-card hover:shadow-card-hover hover:-translate-y-1.5 transition-all duration-300 animate-entrance ${isPlaying ? 'ring-2 ring-[#1db954]/50' : ''}`}>
+    <div className={`group relative rounded-2xl overflow-hidden bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 shadow-card dark:shadow-none hover:shadow-card-hover dark:hover:shadow-glow hover:-translate-y-1.5 transition-all duration-300 animate-entrance dark:backdrop-blur-sm ${isPlaying ? 'ring-2 ring-[#1db954]/50' : ''}`}>
 
       {/* ── Image pleine largeur ── */}
       <div
