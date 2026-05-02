@@ -68,6 +68,7 @@ const ReleasesPage: React.FC = () => {
   const [calendarEvents,   setCalendarEvents]   = useState<CalendarEvent[]>([]);
   const [isLoading,        setIsLoading]        = useState(true);
   const [isSyncing,        setIsSyncing]        = useState(false);
+  const [isAutoSyncing,    setIsAutoSyncing]    = useState(false);
   const [toast,            setToast]            = useState<{ msg: string; ok: boolean } | null>(null);
   const [selectedRelease,  setSelectedRelease]  = useState<Release | null>(null);
   const [view,             setView]             = useState<View>('list');
@@ -124,13 +125,30 @@ const ReleasesPage: React.FC = () => {
 
   useEffect(() => { loadReleases(); }, [loadReleases]);
 
-  // ── Sync ───────────────────────────────────────────────────────────────
+  // ── Auto-sync silencieux au chargement si données potentiellement périmées ─
+  const SYNC_KEY      = 'releases_last_sync';
+  const SYNC_INTERVAL = 60 * 60 * 1000; // 1 heure
+
+  useEffect(() => {
+    const last = Number(localStorage.getItem(SYNC_KEY) ?? 0);
+    if (Date.now() - last < SYNC_INTERVAL) return; // données fraîches, pas besoin
+
+    setIsAutoSyncing(true);
+    releaseService.syncReleases()
+      .then(res => { if (res.success) return loadReleases(); })
+      .then(() => localStorage.setItem(SYNC_KEY, String(Date.now())))
+      .catch(() => {}) // silencieux : l'utilisateur voit quand même les données en cache
+      .finally(() => setIsAutoSyncing(false));
+  }, [loadReleases]);
+
+  // ── Sync manuel ────────────────────────────────────────────────────────
   const syncReleases = async () => {
     try {
       setIsSyncing(true);
       const res = await releaseService.syncReleases();
       if (res.success) {
         await loadReleases();
+        localStorage.setItem(SYNC_KEY, String(Date.now()));
         showToast('Synchronisation réussie !', true);
       } else {
         showToast(res.message || 'Erreur lors de la synchronisation', false);
@@ -296,14 +314,20 @@ const ReleasesPage: React.FC = () => {
             </div>
 
             {/* Bouton Sync */}
-            <button
-              onClick={syncReleases}
-              disabled={isSyncing}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-spotify-500 to-spotify-600 hover:from-spotify-600 hover:to-spotify-700 text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              <RefreshIcon className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{isSyncing ? 'Sync…' : 'Synchroniser'}</span>
-            </button>
+            <div className="relative">
+              <button
+                onClick={syncReleases}
+                disabled={isSyncing || isAutoSyncing}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-spotify-500 to-spotify-600 hover:from-spotify-600 hover:to-spotify-700 text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                <RefreshIcon className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{isSyncing ? 'Sync…' : 'Synchroniser'}</span>
+              </button>
+              {/* Point clignotant discret quand l'auto-sync tourne */}
+              {isAutoSyncing && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-sm" />
+              )}
+            </div>
           </div>
         </div>
       </div>
