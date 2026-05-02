@@ -304,27 +304,40 @@ const DashboardPage: React.FC = () => {
   const [releases,  setReleases]  = useState<Release[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const SYNC_KEY      = 'releases_last_sync';
+  const SYNC_INTERVAL = 60 * 60 * 1000;
+
+  const loadData = React.useCallback(async () => {
+    const start = new Date(); start.setMonth(start.getMonth() - 1);
+    const end   = new Date(); end.setMonth(end.getMonth() + 12);
+
+    const [favsRes, relRes] = await Promise.all([
+      artistService.getFavorites(),
+      releaseService.getUserReleases(start.toISOString(), end.toISOString()),
+    ]);
+    if (favsRes.success && favsRes.data) setFavorites(favsRes.data);
+    if (relRes.success && relRes.data)   setReleases(relRes.data);
+  }, []);
+
   useEffect(() => {
-    const load = async () => {
+    const init = async () => {
       setIsLoading(true);
       try {
-        const start = new Date(); start.setMonth(start.getMonth() - 1);
-        const end   = new Date(); end.setMonth(end.getMonth() + 12);
-
-        const [favsRes, relRes] = await Promise.all([
-          artistService.getFavorites(),
-          releaseService.getUserReleases(start.toISOString(), end.toISOString()),
-        ]);
-        if (favsRes.success && favsRes.data) setFavorites(favsRes.data);
-        if (relRes.success && relRes.data)   setReleases(relRes.data);
+        // Auto-sync silencieux si les données ont plus d'une heure
+        const last = Number(localStorage.getItem(SYNC_KEY) ?? 0);
+        if (Date.now() - last >= SYNC_INTERVAL) {
+          await releaseService.syncReleases();
+          localStorage.setItem(SYNC_KEY, String(Date.now()));
+        }
+        await loadData();
       } catch {
         // silencieux
       } finally {
         setIsLoading(false);
       }
     };
-    load();
-  }, []);
+    init();
+  }, [loadData]);
 
   // ── Dérivations ──────────────────────────────────────────────────────────
   const now = new Date();
