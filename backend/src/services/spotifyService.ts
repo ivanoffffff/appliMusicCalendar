@@ -10,6 +10,10 @@ class SpotifyService {
   private accessToken: string | null = null;
   private tokenExpiry: Date | null = null;
 
+  async getAppToken(): Promise<string> {
+    return this.getAccessToken();
+  }
+
   private async getAccessToken(): Promise<string> {
     // Si on a déjà un token valide, on l'utilise
     if (this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry) {

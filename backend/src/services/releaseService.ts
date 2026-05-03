@@ -1,7 +1,6 @@
 import prisma from '../config/database';
 import { spotifyClient } from '../config/httpClient';
 import spotifyService from './spotifyService';
-import spotifyUserService from './spotifyUserService';
 import deezerService, { NormalizedDeezerAlbum } from './deezerService';
 import notificationService from './notificationService';
 
@@ -82,18 +81,12 @@ class ReleaseService {
         return { message: 'Aucun artiste favori trouvé', releases: [] };
       }
 
-      // Token utilisateur obligatoire — le token client credentials est trop limité
-      const userToken = await spotifyUserService.getValidAccessToken(userId).catch(() => null);
-      if (!userToken) {
-        return { message: 'Compte Spotify non connecté — connecte ton compte dans les Paramètres pour synchroniser les sorties.', releases: [] };
-      }
-
       // ── Étape 1 : fetch Spotify séquentiellement, stop immédiat sur 429 ────────
       const artistReleasesList: Array<{ artist: any; releases: SpotifyAlbum[] }> = [];
       for (const { artist } of userFavorites) {
         if (!artist.spotifyId) continue;
         try {
-          const releases = await this.getArtistReleases(artist.spotifyId, userToken);
+          const releases = await this.getArtistReleases(artist.spotifyId);
           if (releases.length > 0) artistReleasesList.push({ artist, releases });
         } catch (err: any) {
           if (err?.response?.status === 429) {
@@ -232,14 +225,7 @@ class ReleaseService {
   ): Promise<void> {
     if (!artist.spotifyId) return;
     try {
-      const userToken = userId
-        ? await spotifyUserService.getValidAccessToken(userId).catch(() => null)
-        : null;
-      if (!userToken) {
-        console.log(`⏭ Sync ignorée pour ${artist.name} — aucun token Spotify utilisateur`);
-        return;
-      }
-      const releases = await this.getArtistReleases(artist.spotifyId, userToken);
+      const releases = await this.getArtistReleases(artist.spotifyId);
       if (releases.length === 0) return;
 
       const existingRows = await prisma.release.findMany({
@@ -309,8 +295,8 @@ class ReleaseService {
     }
   }
 
-  async getArtistReleases(spotifyArtistId: string, accessToken: string): Promise<SpotifyAlbum[]> {
-    const token = accessToken;
+  async getArtistReleases(spotifyArtistId: string, accessToken?: string): Promise<SpotifyAlbum[]> {
+    const token = accessToken ?? await spotifyService.getAppToken();
 
     // Laisser remonter les erreurs (429 notamment) pour que l'appelant puisse réagir
     const { data } = await spotifyClient.get<{ items: SpotifyAlbum[] }>(
