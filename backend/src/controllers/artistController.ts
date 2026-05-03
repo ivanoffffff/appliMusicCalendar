@@ -56,7 +56,7 @@ class ArtistController {
 
       // Fire-and-forget : sync des sorties + follow Spotify
       const artist = favorite.artist as { id: string; spotifyId: string | null; deezerId: string | null; name: string };
-      releaseService.syncReleasesForArtist(artist).catch(() => {});
+      releaseService.syncReleasesForArtist(artist, userId).catch(() => {});
       spotifyUserService.followArtist(userId, spotifyId).catch(() => {});
     } catch (error) {
       console.error('Add to favorites error:', error);

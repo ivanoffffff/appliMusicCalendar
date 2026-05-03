@@ -1,6 +1,7 @@
 import prisma from '../config/database';
 import { spotifyClient } from '../config/httpClient';
 import spotifyService from './spotifyService';
+import spotifyUserService from './spotifyUserService';
 import deezerService, { NormalizedDeezerAlbum } from './deezerService';
 import notificationService from './notificationService';
 
@@ -217,10 +218,18 @@ class ReleaseService {
   }
 
   /** Synchronise les sorties d'un seul artiste (appelé après addToFavorites) */
-  async syncReleasesForArtist(artist: { id: string; spotifyId: string | null; deezerId: string | null; name: string }): Promise<void> {
+  async syncReleasesForArtist(
+    artist: { id: string; spotifyId: string | null; deezerId: string | null; name: string },
+    userId?: string,
+  ): Promise<void> {
     if (!artist.spotifyId) return;
     try {
-      const releases = await this.getArtistReleases(artist.spotifyId);
+      // Préférer le token utilisateur (limites individuelles) au token client
+      let userToken: string | undefined;
+      if (userId) {
+        userToken = await spotifyUserService.getValidAccessToken(userId).catch(() => undefined);
+      }
+      const releases = await this.getArtistReleases(artist.spotifyId, userToken);
       if (releases.length === 0) return;
 
       const existingRows = await prisma.release.findMany({
@@ -290,14 +299,14 @@ class ReleaseService {
     }
   }
 
-  async getArtistReleases(spotifyArtistId: string): Promise<SpotifyAlbum[]> {
+  async getArtistReleases(spotifyArtistId: string, accessToken?: string): Promise<SpotifyAlbum[]> {
     try {
-      const accessToken = await (spotifyService as any).getAccessToken();
+      const token = accessToken ?? await (spotifyService as any).getAccessToken();
 
       const { data } = await spotifyClient.get<{ items: SpotifyAlbum[] }>(
         `https://api.spotify.com/v1/artists/${spotifyArtistId}/albums`,
         {
-          headers: { Authorization: `Bearer ${accessToken}` },
+          headers: { Authorization: `Bearer ${token}` },
           params: { include_groups: 'album,single,compilation', limit: 50 },
         }
       );
