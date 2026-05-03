@@ -82,21 +82,18 @@ class ReleaseService {
         return { message: 'Aucun artiste favori trouvé', releases: [] };
       }
 
-      // ── Étape 1 : fetch Spotify pour tous les artistes en parallèle ───────────
-      const spotifyResults = await Promise.allSettled(
-        userFavorites.map(async ({ artist }) => {
-          if (!artist.spotifyId) return { artist, releases: [] as SpotifyAlbum[] };
-          const releases = await this.getArtistReleases(artist.spotifyId);
-          return { artist, releases };
-        })
-      );
+      // Préférer le token utilisateur pour éviter le rate limit partagé
+      const userToken = await spotifyUserService.getValidAccessToken(userId).catch(() => undefined);
 
-      const artistReleasesList = spotifyResults
-        .filter((r): r is PromiseFulfilledResult<{ artist: any; releases: SpotifyAlbum[] }> =>
-          r.status === 'fulfilled'
-        )
-        .map(r => r.value)
-        .filter(({ releases }) => releases.length > 0);
+      // ── Étape 1 : fetch Spotify séquentiellement avec délai pour éviter le 429 ─
+      const artistReleasesList: Array<{ artist: any; releases: SpotifyAlbum[] }> = [];
+      for (const { artist } of userFavorites) {
+        if (!artist.spotifyId) continue;
+        const releases = await this.getArtistReleases(artist.spotifyId, userToken);
+        if (releases.length > 0) artistReleasesList.push({ artist, releases });
+        // Petit délai entre chaque requête pour ménager le rate limit
+        await new Promise(r => setTimeout(r, 100));
+      }
 
       // ── Étape 2 : une seule requête DB pour savoir quelles releases existent ──
       const allSpotifyIds = artistReleasesList.flatMap(({ releases }) => releases.map(r => r.id));
