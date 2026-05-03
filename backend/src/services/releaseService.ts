@@ -82,8 +82,11 @@ class ReleaseService {
         return { message: 'Aucun artiste favori trouvé', releases: [] };
       }
 
-      // Préférer le token utilisateur (limites par compte) sinon token client
-      const userToken = await spotifyUserService.getValidAccessToken(userId).catch(() => undefined);
+      // Token utilisateur obligatoire — le token client credentials est trop limité
+      const userToken = await spotifyUserService.getValidAccessToken(userId).catch(() => null);
+      if (!userToken) {
+        return { message: 'Compte Spotify non connecté — connecte ton compte dans les Paramètres pour synchroniser les sorties.', releases: [] };
+      }
 
       // ── Étape 1 : fetch Spotify séquentiellement, stop immédiat sur 429 ────────
       const artistReleasesList: Array<{ artist: any; releases: SpotifyAlbum[] }> = [];
@@ -93,11 +96,10 @@ class ReleaseService {
           const releases = await this.getArtistReleases(artist.spotifyId, userToken);
           if (releases.length > 0) artistReleasesList.push({ artist, releases });
         } catch (err: any) {
-          const status = err?.response?.status;
-          if (status === 429) {
+          if (err?.response?.status === 429) {
             const retryAfter = err?.response?.headers?.['retry-after'];
-            console.warn(`⚠️ Rate limit Spotify (429) après ${artistReleasesList.length} artiste(s). retry-after: ${retryAfter}s. Sync partielle.`);
-            break; // On arrête et on traite ce qu'on a déjà
+            console.warn(`⚠️ Rate limit Spotify (429) après ${artistReleasesList.length} artiste(s). Retry-after: ${retryAfter}s.`);
+            break;
           }
           console.error(`Erreur albums ${artist.name}:`, err?.message ?? err);
         }
@@ -230,10 +232,12 @@ class ReleaseService {
   ): Promise<void> {
     if (!artist.spotifyId) return;
     try {
-      // Préférer le token utilisateur (limites individuelles) au token client
-      let userToken: string | undefined;
-      if (userId) {
-        userToken = await spotifyUserService.getValidAccessToken(userId).catch(() => undefined);
+      const userToken = userId
+        ? await spotifyUserService.getValidAccessToken(userId).catch(() => null)
+        : null;
+      if (!userToken) {
+        console.log(`⏭ Sync ignorée pour ${artist.name} — aucun token Spotify utilisateur`);
+        return;
       }
       const releases = await this.getArtistReleases(artist.spotifyId, userToken);
       if (releases.length === 0) return;
@@ -305,8 +309,8 @@ class ReleaseService {
     }
   }
 
-  async getArtistReleases(spotifyArtistId: string, accessToken?: string): Promise<SpotifyAlbum[]> {
-    const token = accessToken ?? await (spotifyService as any).getAccessToken();
+  async getArtistReleases(spotifyArtistId: string, accessToken: string): Promise<SpotifyAlbum[]> {
+    const token = accessToken;
 
     // Laisser remonter les erreurs (429 notamment) pour que l'appelant puisse réagir
     const { data } = await spotifyClient.get<{ items: SpotifyAlbum[] }>(
