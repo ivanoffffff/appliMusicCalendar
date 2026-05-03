@@ -337,7 +337,7 @@ const ReleasesPage: React.FC = () => {
       </div>
 
       {/* ══════════ CONTRÔLES STICKY ══════════ */}
-      <div className="sticky top-14 md:top-0 z-40 bg-white/85 dark:bg-[#0a0a1e]/85 backdrop-blur-xl border-b border-gray-100/60 dark:border-white/5">
+      <div className="sticky top-0 z-40 bg-white/85 dark:bg-[#0a0a1e]/85 backdrop-blur-xl border-b border-gray-100/60 dark:border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
 
@@ -547,10 +547,10 @@ const ReleasesPage: React.FC = () => {
 
       {/* ══════════ BARRE FLOTTANTE SÉLECTION ══════════ */}
       {isSelecting && (
-        <div className={`fixed left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto z-50 animate-entrance transition-all duration-300
-          ${currentTrack ? 'bottom-[140px]' : 'bottom-[80px]'}
+        <div className={`fixed left-14 right-0 md:left-60 z-50 animate-entrance transition-all duration-300 flex justify-center
+          ${currentTrack ? 'bottom-[76px]' : 'bottom-0'}
           md:bottom-6`}>
-          <div className="flex items-center justify-between gap-3 px-4 py-3 md:px-5 md:rounded-2xl bg-white dark:bg-slate-800 shadow-2xl border-t md:border border-gray-100 dark:border-white/10 backdrop-blur-xl">
+          <div className="w-full md:w-auto flex items-center justify-between gap-3 px-4 py-3 md:px-5 md:rounded-2xl bg-white dark:bg-slate-800 shadow-2xl border-t md:border border-gray-100 dark:border-white/10 backdrop-blur-xl">
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-semibold text-secondary uppercase tracking-wider">Playlist</span>
               <span className="text-sm font-bold text-primary">

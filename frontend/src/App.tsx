@@ -122,7 +122,7 @@ function App() {
         <Router>
           <SpotifyPlayerProvider>
             <Sidebar />
-            <div className="md:pl-60">
+            <div className="pl-14 md:pl-60">
               <AppContent />
               <MiniPlayer />
             </div>

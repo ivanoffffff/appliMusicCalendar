@@ -101,7 +101,7 @@ const ArtistsPage: React.FC = () => {
       <Header />
 
       {/* ══════════ STICKY TABS ══════════ */}
-      <div className="sticky top-14 md:top-0 z-40">
+      <div className="sticky top-0 z-40">
         <div className="absolute inset-0 bg-white/85 dark:bg-[#0a0a1e]/85 backdrop-blur-xl border-b border-gray-100/60 dark:border-white/5" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center gap-2">
           {TABS.map(tab => (

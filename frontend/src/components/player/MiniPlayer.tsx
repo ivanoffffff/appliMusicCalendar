@@ -106,7 +106,7 @@ const MiniPlayer: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up">
+    <div className="fixed bottom-0 left-14 right-0 md:left-60 z-50 animate-slide-up">
       {/* Barre de progression */}
       <div
         className="h-1 bg-gray-200 dark:bg-slate-700 cursor-pointer group"
