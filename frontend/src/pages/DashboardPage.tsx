@@ -80,7 +80,7 @@ const RecentReleasesBlock: React.FC<{
             <SparkleIcon className="w-3.5 h-3.5 text-white" />
           </div>
           <h3 className="font-bold text-primary">Sorties cette semaine</h3>
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+          <span className="hidden sm:inline text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
             {releases.length} nouvelle{releases.length > 1 ? 's' : ''}
           </span>
         </div>

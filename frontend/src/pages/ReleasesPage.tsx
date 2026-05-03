@@ -336,8 +336,8 @@ const ReleasesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ══════════ CONTRÔLES STICKY ══════════ */}
-      <div className="sticky top-0 z-40 bg-white/85 dark:bg-[#0a0a1e]/85 backdrop-blur-xl border-b border-gray-100/60 dark:border-white/5">
+      {/* ══════════ CONTRÔLES ══════════ */}
+      <div className="bg-white/85 dark:bg-[#0a0a1e]/85 backdrop-blur-xl border-b border-gray-100/60 dark:border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
 
@@ -363,9 +363,9 @@ const ReleasesPage: React.FC = () => {
                 ))}
               </div>
 
-              {/* Filtres (liste uniquement) */}
+              {/* Filtres (liste uniquement, masqués sur mobile) */}
               {view === 'list' && (
-                <div className="flex gap-1 bg-gray-100/80 dark:bg-white/5 p-1 rounded-xl border border-gray-200/50 dark:border-white/5">
+                <div className="hidden sm:flex gap-1 bg-gray-100/80 dark:bg-white/5 p-1 rounded-xl border border-gray-200/50 dark:border-white/5">
                   {([
                     { id: 'all',      label: 'Toutes',   icon: null },
                     { id: 'upcoming', label: 'À venir',  icon: <ClockIcon className="w-3 h-3" /> },
