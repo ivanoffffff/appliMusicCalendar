@@ -298,31 +298,55 @@ const StatsPage: React.FC = () => {
               : topTracks.length === 0
                 ? <p className="text-sm text-secondary text-center py-4">Aucune donnée pour cette période</p>
                 : topTracks.slice(0, 10).map((track, i) => (
-                  <a
+                  <div
                     key={track.id}
-                    href={track.external_urls?.spotify}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group"
                   >
                     <span className="text-xs font-black text-secondary w-4 text-center shrink-0">{i + 1}</span>
-                    {track.album?.images?.[0]?.url ? (
-                      <img
-                        src={track.album.images[0].url}
-                        alt={track.name}
-                        className="w-10 h-10 rounded-lg object-cover shrink-0 shadow-sm"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 shrink-0" />
-                    )}
+                    <a
+                      href={track.external_urls?.spotify}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      {track.album?.images?.[0]?.url ? (
+                        <img
+                          src={track.album.images[0].url}
+                          alt={track.name}
+                          className="w-10 h-10 rounded-lg object-cover shadow-sm hover:opacity-80 transition-opacity"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600" />
+                      )}
+                    </a>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-primary truncate group-hover:text-primary-500 transition-colors">{track.name}</p>
-                      <p className="text-xs text-secondary truncate">{track.artists?.map((a: any) => a.name).join(', ')}</p>
+                      <a
+                        href={track.external_urls?.spotify}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-semibold text-primary truncate hover:text-primary-500 transition-colors block"
+                      >
+                        {track.name}
+                      </a>
+                      <p className="text-xs text-secondary truncate">
+                        {track.artists?.map((a: any, idx: number) => (
+                          <React.Fragment key={a.id}>
+                            {idx > 0 && ', '}
+                            <button
+                              onClick={() => navigate(`/artists/${a.id}`)}
+                              className="hover:text-primary-500 hover:underline transition-colors cursor-pointer"
+                            >
+                              {a.name}
+                            </button>
+                          </React.Fragment>
+                        ))}
+                      </p>
                     </div>
                     <span className="text-[10px] text-secondary shrink-0 font-mono">
                       {track.duration_ms ? `${Math.floor(track.duration_ms / 60000)}:${String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, '0')}` : ''}
                     </span>
-                  </a>
+                  </div>
                 ))
             }
           </div>
@@ -340,12 +364,10 @@ const StatsPage: React.FC = () => {
               : topArtists.length === 0
                 ? <p className="text-sm text-secondary text-center py-4">Aucune donnée pour cette période</p>
                 : topArtists.slice(0, 10).map((artist, i) => (
-                  <a
+                  <button
                     key={artist.id}
-                    href={artist.external_urls?.spotify}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group"
+                    onClick={() => navigate(`/artists/${artist.id}`)}
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group cursor-pointer text-left"
                   >
                     <span className="text-xs font-black text-secondary w-4 text-center shrink-0">{i + 1}</span>
                     {artist.images?.[0]?.url ? (
@@ -364,7 +386,7 @@ const StatsPage: React.FC = () => {
                     <div className="text-right shrink-0">
                       <div className="text-[10px] text-secondary font-mono">{artist.popularity}<span className="text-[9px]">%</span></div>
                     </div>
-                  </a>
+                  </button>
                 ))
             }
           </div>
