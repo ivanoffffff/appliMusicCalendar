@@ -216,6 +216,68 @@ class ReleaseService {
     }
   }
 
+  /** Synchronise les sorties d'un seul artiste (appelé après addToFavorites) */
+  async syncReleasesForArtist(artist: { id: string; spotifyId: string | null; deezerId: string | null; name: string }): Promise<void> {
+    if (!artist.spotifyId) return;
+    try {
+      const releases = await this.getArtistReleases(artist.spotifyId);
+      if (releases.length === 0) return;
+
+      const existingRows = await prisma.release.findMany({
+        where: { spotifyId: { in: releases.map(r => r.id) } },
+        select: { spotifyId: true },
+      });
+      const existingIds = new Set(existingRows.map(r => r.spotifyId));
+      const newReleases = releases.filter(r => !existingIds.has(r.id));
+      if (newReleases.length === 0) return;
+
+      let deezerAlbums: NormalizedDeezerAlbum[] = [];
+      if (artist.deezerId) {
+        try { deezerAlbums = await deezerService.getArtistAlbums(artist.deezerId, 50); } catch {}
+      }
+
+      for (const release of newReleases) {
+        let deezerId: string | undefined;
+        let deezerUrl: string | undefined;
+        if (deezerAlbums.length > 0) {
+          const match = deezerAlbums.find(a => this.normalizeName(a.name) === this.normalizeName(release.name));
+          if (match) { deezerId = match.deezerId; deezerUrl = match.deezerUrl; }
+        }
+        try {
+          const created = await prisma.release.upsert({
+            where: { spotifyId: release.id },
+            update: { deezerId, deezerUrl, imageUrl: release.images[0]?.url, spotifyUrl: release.external_urls.spotify, trackCount: release.total_tracks },
+            create: {
+              spotifyId: release.id, deezerId, name: release.name,
+              releaseType: this.mapAlbumType(release.album_type),
+              releaseDate: new Date(release.release_date),
+              imageUrl: release.images[0]?.url, spotifyUrl: release.external_urls.spotify,
+              deezerUrl, trackCount: release.total_tracks, artistId: artist.id,
+            },
+          });
+          this.maybeNotify(created.id, release.release_date);
+        } catch (err: any) {
+          if (err.code === 'P2002' && err.meta?.target?.includes('deezerId')) {
+            try {
+              await prisma.release.create({
+                data: {
+                  spotifyId: release.id, name: release.name,
+                  releaseType: this.mapAlbumType(release.album_type),
+                  releaseDate: new Date(release.release_date),
+                  imageUrl: release.images[0]?.url, spotifyUrl: release.external_urls.spotify,
+                  trackCount: release.total_tracks, artistId: artist.id,
+                },
+              });
+            } catch {}
+          }
+        }
+      }
+      console.log(`✅ Sync immédiat : ${newReleases.length} sortie(s) pour ${artist.name}`);
+    } catch (err) {
+      console.error(`❌ Sync immédiat échoué pour ${artist.name}:`, err);
+    }
+  }
+
   /** Envoie une notification si la sortie date de moins de 7 jours (fire-and-forget) */
   private maybeNotify(releaseId: string, releaseDateStr: string): void {
     const daysDiff = Math.floor(

@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import artistService from '../services/artistService';
 import spotifyService from '../services/spotifyService';
+import spotifyUserService from '../services/spotifyUserService';
+import releaseService from '../services/releaseService';
 import prisma from '../config/database';
 
 class ArtistController {
@@ -45,11 +47,17 @@ class ArtistController {
 
       const favorite = await artistService.addToFavorites(userId, spotifyId, category);
 
+      // Répondre immédiatement, puis sync en arrière-plan
       res.status(201).json({
         success: true,
         message: 'Artiste ajouté aux favoris',
         data: favorite,
       });
+
+      // Fire-and-forget : sync des sorties + follow Spotify
+      const artist = favorite.artist as { id: string; spotifyId: string | null; deezerId: string | null; name: string };
+      releaseService.syncReleasesForArtist(artist).catch(() => {});
+      spotifyUserService.followArtist(userId, spotifyId).catch(() => {});
     } catch (error) {
       console.error('Add to favorites error:', error);
       res.status(400).json({
@@ -64,12 +72,23 @@ class ArtistController {
       const { artistId } = req.params;
       const userId = req.user!.userId;
 
+      // Récupérer le spotifyId avant suppression pour le unfollow Spotify
+      const artist = await prisma.artist.findUnique({
+        where: { id: artistId },
+        select: { spotifyId: true },
+      });
+
       const result = await artistService.removeFromFavorites(userId, artistId);
 
       res.json({
         success: true,
         message: result.message,
       });
+
+      // Fire-and-forget : unfollow sur Spotify
+      if (artist?.spotifyId) {
+        spotifyUserService.unfollowArtist(userId, artist.spotifyId).catch(() => {});
+      }
     } catch (error) {
       console.error('Remove from favorites error:', error);
       res.status(400).json({

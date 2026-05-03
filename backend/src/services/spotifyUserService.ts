@@ -272,6 +272,24 @@ class SpotifyUserService {
     return data;
   }
 
+  // ── Follow / unfollow un artiste sur Spotify ──────────────────────────────
+  async followArtist(userId: string, spotifyArtistId: string): Promise<void> {
+    const accessToken = await this.getValidAccessToken(userId);
+    await spotifyClient.put(
+      `${this.API_URL}/me/following?type=artist`,
+      { ids: [spotifyArtistId] },
+      { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } },
+    );
+  }
+
+  async unfollowArtist(userId: string, spotifyArtistId: string): Promise<void> {
+    const accessToken = await this.getValidAccessToken(userId);
+    await spotifyClient.delete(
+      `${this.API_URL}/me/following?type=artist&ids=${spotifyArtistId}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+  }
+
   // ── Helpers statut ────────────────────────────────────────────────────────
   async isConnected(userId: string): Promise<boolean> {
     const record = await prisma.spotifyToken.findUnique({
