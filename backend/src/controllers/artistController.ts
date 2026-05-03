@@ -35,7 +35,7 @@ class ArtistController {
 
   async addToFavorites(req: Request, res: Response) {
     try {
-      const { spotifyId, category = 'default' } = req.body;
+      const { spotifyId, category = 'default', artistData } = req.body;
       const userId = req.user!.userId;
 
       if (!spotifyId) {
@@ -45,7 +45,7 @@ class ArtistController {
         });
       }
 
-      const favorite = await artistService.addToFavorites(userId, spotifyId, category);
+      const favorite = await artistService.addToFavorites(userId, spotifyId, category, artistData);
 
       // Répondre immédiatement, puis sync en arrière-plan
       res.status(201).json({

@@ -12,42 +12,54 @@ class ArtistService {
     return await spotifyService.searchArtists(query, limit);
   }
 
-  async getOrCreateArtist(spotifyId: string): Promise<any> {
+  async getOrCreateArtist(spotifyId: string, artistData?: {
+    name: string;
+    genres?: string[];
+    imageUrl?: string;
+    popularity?: number;
+    followers?: number;
+  }): Promise<any> {
     // Vérifier si l'artiste existe déjà en base
     let artist = await prisma.artist.findUnique({
       where: { spotifyId },
     });
 
     if (!artist) {
-      // Si pas en base, récupérer depuis Spotify et créer
-      const spotifyArtist = await spotifyService.getArtistById(spotifyId);
-      
-      if (!spotifyArtist) {
-        throw new Error('Artiste non trouvé sur Spotify');
+      // Utiliser les données fournies ou fetcher depuis Spotify en fallback
+      let data = artistData;
+      if (!data) {
+        const spotifyArtist = await spotifyService.getArtistById(spotifyId);
+        if (!spotifyArtist) throw new Error('Artiste non trouvé sur Spotify');
+        data = {
+          name:       spotifyArtist.name,
+          genres:     spotifyArtist.genres,
+          imageUrl:   spotifyArtist.imageUrl,
+          popularity: spotifyArtist.popularity,
+          followers:  spotifyArtist.followers,
+        };
       }
 
       // Chercher aussi sur Deezer pour enrichir les données
       let deezerId: string | undefined;
       try {
-        const deezerArtist = await deezerService.findArtistByName(spotifyArtist.name);
+        const deezerArtist = await deezerService.findArtistByName(data.name);
         if (deezerArtist) {
           deezerId = deezerArtist.deezerId;
-          console.log(`✅ Deezer match found for ${spotifyArtist.name}: ${deezerId}`);
+          console.log(`✅ Deezer match found for ${data.name}: ${deezerId}`);
         }
       } catch (error) {
-        console.log(`⚠️ Could not find Deezer match for ${spotifyArtist.name}`);
+        console.log(`⚠️ Could not find Deezer match for ${data.name}`);
       }
 
       artist = await prisma.artist.create({
         data: {
-          spotifyId: spotifyArtist.spotifyId,
-          deezerId: deezerId,
-          name: spotifyArtist.name,
-          genres: JSON.stringify(spotifyArtist.genres),
-          imageUrl: spotifyArtist.imageUrl,
-          // 🆕 Sauvegarder les données Spotify dans le cache
-          popularity: spotifyArtist.popularity,
-          followers: spotifyArtist.followers,
+          spotifyId,
+          deezerId,
+          name:       data.name,
+          genres:     JSON.stringify(data.genres ?? []),
+          imageUrl:   data.imageUrl,
+          popularity: data.popularity,
+          followers:  data.followers,
           lastSyncAt: new Date(),
         },
       });
@@ -72,9 +84,10 @@ class ArtistService {
     return artist;
   }
 
-  async addToFavorites(userId: string, spotifyId: string, category: string = 'default') {
-    // S'assurer que l'artiste existe en base (avec enrichissement Deezer automatique)
-    const artist = await this.getOrCreateArtist(spotifyId);
+  async addToFavorites(userId: string, spotifyId: string, category: string = 'default', artistData?: {
+    name: string; genres?: string[]; imageUrl?: string; popularity?: number; followers?: number;
+  }) {
+    const artist = await this.getOrCreateArtist(spotifyId, artistData);
 
     // Vérifier si déjà en favoris
     const existingFavorite = await prisma.userFavorite.findUnique({

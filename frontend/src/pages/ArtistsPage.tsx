@@ -72,7 +72,13 @@ const ArtistsPage: React.FC = () => {
         await artistService.removeFromFavorites(existing.artist.id);
         setFavorites(prev => prev.filter(f => f.id !== existing.id));
       } else {
-        const res = await artistService.addToFavorites(artist.spotifyId, 'default');
+        const res = await artistService.addToFavorites(artist.spotifyId, 'default', {
+          name: artist.name,
+          genres: artist.genres,
+          imageUrl: artist.imageUrl,
+          popularity: artist.popularity,
+          followers: artist.followers,
+        });
         if (res.success) await loadFavorites();
       }
     } catch {

@@ -59,10 +59,21 @@ export const artistService = {
     return response.data;
   },
 
-  async addToFavorites(spotifyId: string, category = 'default'): Promise<ApiResponse<any>> {
+  async addToFavorites(
+    spotifyId: string,
+    category = 'default',
+    artistData?: {
+      name: string;
+      genres?: string[];
+      imageUrl?: string;
+      popularity?: number;
+      followers?: number;
+    },
+  ): Promise<ApiResponse<any>> {
     const response: AxiosResponse<ApiResponse<any>> = await api.post('/artists/favorites', {
       spotifyId,
       category,
+      artistData,
     });
     return response.data;
   },
