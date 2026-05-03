@@ -191,6 +191,59 @@ router.post('/playlist', authenticateToken, async (req: Request, res: Response) 
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /api/spotify/me  — Profil Spotify de l'utilisateur connecté
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/me', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const profile = await spotifyUserService.getSpotifyProfile(req.user!.userId);
+    res.json({ success: true, data: profile });
+  } catch (err: any) {
+    if (err.message === 'Compte Spotify non connecté') {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/spotify/top/:type?time_range=short_term|medium_term|long_term&limit=20
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/top/:type', authenticateToken, async (req: Request, res: Response) => {
+  const { type } = req.params as { type: string };
+  if (type !== 'tracks' && type !== 'artists') {
+    return res.status(400).json({ success: false, message: 'Type invalide (tracks | artists)' });
+  }
+  const timeRange = (req.query.time_range as string) || 'medium_term';
+  const limit     = Math.min(parseInt(String(req.query.limit || '20'), 10), 50);
+
+  try {
+    const data = await spotifyUserService.getTopItems(req.user!.userId, type, timeRange as any, limit);
+    res.json({ success: true, data });
+  } catch (err: any) {
+    if (err.message === 'Compte Spotify non connecté') {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/spotify/recently-played?limit=50
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/recently-played', authenticateToken, async (req: Request, res: Response) => {
+  const limit = Math.min(parseInt(String(req.query.limit || '50'), 10), 50);
+  try {
+    const data = await spotifyUserService.getRecentlyPlayed(req.user!.userId, limit);
+    res.json({ success: true, data });
+  } catch (err: any) {
+    if (err.message === 'Compte Spotify non connecté') {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DELETE /api/spotify/disconnect
 // Supprime le token Spotify de l'utilisateur.
 // ─────────────────────────────────────────────────────────────────────────────

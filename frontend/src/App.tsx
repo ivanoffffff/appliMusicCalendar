@@ -10,6 +10,7 @@ import ReleasesPage from './pages/ReleasesPage';
 import NotificationSettingsPage from './pages/NotificationSettingsPage';
 import ArtistDetailPage from './pages/ArtistDetailPage';
 import SpotifyCallbackPage from './pages/SpotifyCallbackPage';
+import StatsPage from './pages/StatsPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 import { SpotifyPlayerProvider } from './contexts/SpotifyPlayerContext';
 import MiniPlayer from './components/player/MiniPlayer';
@@ -105,6 +106,14 @@ function AppContent() {
         element={
           <PrivateRoute>
             <ArtistDetailPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/stats"
+        element={
+          <PrivateRoute>
+            <StatsPage />
           </PrivateRoute>
         }
       />

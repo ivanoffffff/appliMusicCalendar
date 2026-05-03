@@ -154,13 +154,19 @@ export const TrendingUpIcon: React.FC<{ className?: string }> = ({ className = '
 );
 
 // ─── ChartBarIcon 📊 ──────────────────────────────────────────────────────────
-export const ChartBarIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
-  <svg className={className} viewBox="0 0 24 24" {...S}>
-    <line x1="18" y1="20" x2="18" y2="10" />
-    <line x1="12" y1="20" x2="12" y2="4" />
-    <line x1="6" y1="20" x2="6" y2="14" />
-    <line x1="2" y1="20" x2="22" y2="20" />
-  </svg>
+export const ChartBarIcon: React.FC<{ className?: string; filled?: boolean }> = ({ className = 'w-5 h-5', filled }) => (
+  filled ? (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M3 3v18h18v-2H5V3H3zm4 10h2v5H7v-5zm4-4h2v9h-2V9zm4-4h2v13h-2V5z" />
+    </svg>
+  ) : (
+    <svg className={className} viewBox="0 0 24 24" {...S}>
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+      <line x1="2" y1="20" x2="22" y2="20" />
+    </svg>
+  )
 );
 
 // ─── SparkleIcon ✨ ───────────────────────────────────────────────────────────

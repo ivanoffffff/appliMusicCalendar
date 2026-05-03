@@ -49,6 +49,8 @@ class SpotifyUserService {
     'user-follow-modify',
     'playlist-modify-public',
     'playlist-modify-private',
+    'user-top-read',
+    'user-read-recently-played',
   ].join(' ');
 
   // Lus à l'appel (pas à l'instanciation) pour que dotenv soit déjà chargé
@@ -226,6 +228,48 @@ class SpotifyUserService {
     }
 
     return { playlistId, playlistUrl, trackCount: trackUris.length };
+  }
+
+  // ── Profil Spotify de l'utilisateur ──────────────────────────────────────
+  async getSpotifyProfile(userId: string): Promise<{
+    id: string;
+    display_name: string;
+    email: string;
+    images: Array<{ url: string }>;
+    followers: { total: number };
+    product: string;
+    external_urls: { spotify: string };
+  }> {
+    const accessToken = await this.getValidAccessToken(userId);
+    const { data } = await spotifyClient.get(`${this.API_URL}/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    return data;
+  }
+
+  // ── Top tracks ou top artistes ────────────────────────────────────────────
+  async getTopItems(
+    userId: string,
+    type: 'tracks' | 'artists',
+    timeRange: 'short_term' | 'medium_term' | 'long_term' = 'medium_term',
+    limit = 20,
+  ): Promise<{ items: any[] }> {
+    const accessToken = await this.getValidAccessToken(userId);
+    const { data } = await spotifyClient.get(
+      `${this.API_URL}/me/top/${type}?time_range=${timeRange}&limit=${limit}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+    return data;
+  }
+
+  // ── Historique d'écoute récent ────────────────────────────────────────────
+  async getRecentlyPlayed(userId: string, limit = 50): Promise<{ items: any[] }> {
+    const accessToken = await this.getValidAccessToken(userId);
+    const { data } = await spotifyClient.get(
+      `${this.API_URL}/me/player/recently-played?limit=${limit}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+    return data;
   }
 
   // ── Helpers statut ────────────────────────────────────────────────────────

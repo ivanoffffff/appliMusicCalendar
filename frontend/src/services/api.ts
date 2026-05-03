@@ -182,4 +182,27 @@ export const spotifyAccountService = {
   },
 };
 
+// ── Stats Spotify ────────────────────────────────────────────────────────────
+export const statsService = {
+  async getProfile(): Promise<any> {
+    const response = await api.get('/spotify/me');
+    return response.data.data;
+  },
+
+  async getTopTracks(timeRange: 'short_term' | 'medium_term' | 'long_term' = 'medium_term', limit = 20): Promise<any[]> {
+    const response = await api.get(`/spotify/top/tracks?time_range=${timeRange}&limit=${limit}`);
+    return response.data.data.items;
+  },
+
+  async getTopArtists(timeRange: 'short_term' | 'medium_term' | 'long_term' = 'medium_term', limit = 20): Promise<any[]> {
+    const response = await api.get(`/spotify/top/artists?time_range=${timeRange}&limit=${limit}`);
+    return response.data.data.items;
+  },
+
+  async getRecentlyPlayed(limit = 50): Promise<any[]> {
+    const response = await api.get(`/spotify/recently-played?limit=${limit}`);
+    return response.data.data.items;
+  },
+};
+
 export default api;

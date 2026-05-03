@@ -3,12 +3,13 @@ import logo from '../../assets/logo.svg';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { SunIcon, MoonIcon, HomeIcon, MicrophoneIcon, CalendarIcon } from './Icons';
+import { SunIcon, MoonIcon, HomeIcon, MicrophoneIcon, CalendarIcon, ChartBarIcon } from './Icons';
 
 const NAV_ITEMS = [
   { path: '/dashboard', label: 'Dashboard',  Icon: HomeIcon       },
   { path: '/artists',   label: 'Artistes',   Icon: MicrophoneIcon },
   { path: '/releases',  label: 'Calendrier', Icon: CalendarIcon   },
+  { path: '/stats',     label: 'Statistiques', Icon: ChartBarIcon },
 ];
 
 const SettingsIcon: React.FC<{ className?: string }> = ({ className }) => (
