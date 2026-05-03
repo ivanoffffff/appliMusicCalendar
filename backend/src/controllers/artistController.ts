@@ -113,7 +113,27 @@ class ArtistController {
       });
 
       if (!artist) {
-        return res.status(404).json({ success: false, message: 'Artiste introuvable' });
+        // Artiste pas en DB → fetch depuis l'API Spotify publique
+        const spotifyArtist = await spotifyService.getArtistById(spotifyId);
+        if (!spotifyArtist) {
+          return res.status(404).json({ success: false, message: 'Artiste introuvable' });
+        }
+        return res.json({
+          success: true,
+          data: {
+            id:         spotifyArtist.spotifyId,
+            spotifyId:  spotifyArtist.spotifyId,
+            name:       spotifyArtist.name,
+            genres:     spotifyArtist.genres,
+            imageUrl:   spotifyArtist.imageUrl,
+            popularity: spotifyArtist.popularity,
+            followers:  spotifyArtist.followers,
+            spotifyUrl: spotifyArtist.spotifyUrl,
+            deezerUrl:  null,
+            isFavorite: false,
+            releases:   [],
+          },
+        });
       }
 
       const isFavorite = userId ? (artist.favorites as { id: string }[]).length > 0 : false;
