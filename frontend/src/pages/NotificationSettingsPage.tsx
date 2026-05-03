@@ -30,56 +30,70 @@ interface NotificationPreferences {
   weeklySummary?: boolean;
 }
 
+// ─── Toggle switch ────────────────────────────────────────────────────────────
+const Toggle: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked, onChange }) => (
+  <button
+    type="button"
+    onClick={onChange}
+    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 ${
+      checked ? 'bg-primary-500' : 'bg-gray-200 dark:bg-slate-600'
+    }`}
+  >
+    <span
+      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+        checked ? 'translate-x-6' : 'translate-x-1'
+      }`}
+    />
+  </button>
+);
+
+// ─── Section card ─────────────────────────────────────────────────────────────
+const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 rounded-2xl p-5 space-y-4 dark:backdrop-blur-sm">
+    {children}
+  </div>
+);
+
+const SectionTitle: React.FC<{ icon: React.ReactNode; children: React.ReactNode }> = ({ icon, children }) => (
+  <div className="flex items-center gap-2 mb-1">
+    {icon}
+    <h3 className="text-sm font-bold text-primary">{children}</h3>
+  </div>
+);
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 const NotificationSettingsPage: React.FC = () => {
   const { user, logout } = useAuth();
   const [preferences, setPreferences] = useState<NotificationPreferences>({
     emailNotifications: true,
-    notificationTypes: {
-      newAlbum: true,
-      newSingle: true,
-      newCompilation: true,
-    },
+    notificationTypes: { newAlbum: true, newSingle: true, newCompilation: true },
     frequency: 'immediate',
     weeklySummary: true,
   });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading]   = useState(true);
+  const [isSaving,  setIsSaving]    = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  useEffect(() => {
-    loadPreferences();
-  }, []);
+  useEffect(() => { loadPreferences(); }, []);
 
   const loadPreferences = async () => {
     try {
       setIsLoading(true);
       const response = await notificationService.getPreferences();
       if (response.success && response.data) {
-        setPreferences({
-          ...response.data,
-          weeklySummary: response.data.weeklySummary ?? true,
-        });
+        setPreferences({ ...response.data, weeklySummary: response.data.weeklySummary ?? true });
       }
-    } catch (error) {
-      console.error('Erreur lors du chargement des préférences:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch {}
+    finally { setIsLoading(false); }
   };
 
   const savePreferences = async () => {
     try {
       setIsSaving(true);
       setSaveStatus('idle');
-
       const response = await notificationService.updatePreferences(preferences);
-
-      if (response.success) {
-        setSaveStatus('success');
-      } else {
-        setSaveStatus('error');
-      }
-    } catch (error) {
+      setSaveStatus(response.success ? 'success' : 'error');
+    } catch {
       setSaveStatus('error');
     } finally {
       setIsSaving(false);
@@ -89,316 +103,189 @@ const NotificationSettingsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <>
+      <div className="min-h-screen mesh-bg flex items-center justify-center">
         <Header />
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 flex items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </div>
-      </>
+        <LoadingSpinner size="lg" type="musical" />
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="min-h-screen mesh-bg">
       <Header />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-10 pb-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 pb-24 space-y-5">
 
-          {/* En-tête avec info utilisateur et bouton déconnexion */}
-          <div className="mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <div className="text-center">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center justify-center gap-3">
-                  <BellIcon className="w-7 h-7 text-primary-500" />
-                  Paramètres de notification
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Personnalisez comment et quand vous souhaitez recevoir des notifications
-                </p>
-              </div>
-            </div>
-
-            {/* Info utilisateur */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-primary-400 to-accent-500 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-                  {(user?.firstName?.[0] || user?.username?.[0] || 'U').toUpperCase()}
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                    {user?.firstName || user?.username}
-                  </h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {user?.email}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Connexion Spotify */}
-          <div className="mb-8">
-            <SpotifyConnect />
-          </div>
-
-          {/* Message de confirmation */}
-          {saveStatus !== 'idle' && (
-            <div className={`mb-6 p-4 rounded-lg flex items-center gap-2 ${
-              saveStatus === 'error'
-                ? 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800'
-                : 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800'
-            }`}>
-              {saveStatus === 'success'
-                ? <><CheckCircleIcon className="w-5 h-5 shrink-0" /> Préférences enregistrées avec succès !</>
-                : <><XCircleIcon className="w-5 h-5 shrink-0" /> Erreur lors de l'enregistrement</>
-              }
-            </div>
-          )}
-
-          {/* Paramètres de notifications */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-            <div className="p-6 space-y-6">
-
-              {/* Activation des notifications email */}
-              <div className="flex items-center justify-between pb-6 border-b border-gray-200 dark:border-gray-700">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <MailIcon className="w-5 h-5 text-primary-500" />
-                    Notifications par email
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Recevoir des emails pour les nouvelles sorties
-                  </p>
-                </div>
-                <button
-                  onClick={() => setPreferences(prev => ({
-                    ...prev,
-                    emailNotifications: !prev.emailNotifications
-                  }))}
-                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                    preferences.emailNotifications
-                      ? 'bg-purple-600'
-                      : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                      preferences.emailNotifications ? 'translate-x-7' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* Types de sorties */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <MusicalNotesIcon className="w-5 h-5 text-primary-500" />
-                  Types de sorties à suivre
-                </h3>
-                <div className="space-y-3">
-                  <label className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
-                    <div className="flex items-center">
-                      <DiscIcon className="w-7 h-7 mr-3 text-purple-500" />
-                      <div>
-                        <div className="font-medium text-gray-900 dark:text-white">Albums</div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">Nouveaux albums complets</div>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={preferences.notificationTypes.newAlbum}
-                      onChange={(e) => setPreferences(prev => ({
-                        ...prev,
-                        notificationTypes: {
-                          ...prev.notificationTypes,
-                          newAlbum: e.target.checked
-                        }
-                      }))}
-                      className="h-5 w-5 text-purple-600 rounded focus:ring-purple-500"
-                    />
-                  </label>
-
-                  <label className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
-                    <div className="flex items-center">
-                      <MusicNoteIcon className="w-7 h-7 mr-3 text-emerald-500" />
-                      <div>
-                        <div className="font-medium text-gray-900 dark:text-white">Singles</div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">Nouveaux singles et morceaux</div>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={preferences.notificationTypes.newSingle}
-                      onChange={(e) => setPreferences(prev => ({
-                        ...prev,
-                        notificationTypes: {
-                          ...prev.notificationTypes,
-                          newSingle: e.target.checked
-                        }
-                      }))}
-                      className="h-5 w-5 text-purple-600 rounded focus:ring-purple-500"
-                    />
-                  </label>
-
-                  <label className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
-                    <div className="flex items-center">
-                      <VinylIcon className="w-7 h-7 mr-3 text-blue-500" />
-                      <div>
-                        <div className="font-medium text-gray-900 dark:text-white">Compilations & EP</div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">EP et compilations</div>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={preferences.notificationTypes.newCompilation}
-                      onChange={(e) => setPreferences(prev => ({
-                        ...prev,
-                        notificationTypes: {
-                          ...prev.notificationTypes,
-                          newCompilation: e.target.checked
-                        }
-                      }))}
-                      className="h-5 w-5 text-purple-600 rounded focus:ring-purple-500"
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {/* Fréquence des notifications */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <ClockIcon className="w-5 h-5 text-primary-500" />
-                  Fréquence des notifications
-                </h3>
-                <div className="space-y-2">
-                  <label className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="frequency"
-                      value="immediate"
-                      checked={preferences.frequency === 'immediate'}
-                      onChange={(e) => setPreferences(prev => ({
-                        ...prev,
-                        frequency: e.target.value as 'immediate' | 'daily' | 'weekly'
-                      }))}
-                      className="h-4 w-4 text-purple-600 focus:ring-purple-500"
-                    />
-                    <span className="ml-3 text-gray-900 dark:text-white">
-                      Immédiatement - Dès qu'une sortie est détectée
-                    </span>
-                  </label>
-
-                  <label className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="frequency"
-                      value="daily"
-                      checked={preferences.frequency === 'daily'}
-                      onChange={(e) => setPreferences(prev => ({
-                        ...prev,
-                        frequency: e.target.value as 'immediate' | 'daily' | 'weekly'
-                      }))}
-                      className="h-4 w-4 text-purple-600 focus:ring-purple-500"
-                    />
-                    <span className="ml-3 text-gray-900 dark:text-white">
-                      Quotidien - Un résumé chaque jour
-                    </span>
-                  </label>
-
-                  <label className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="frequency"
-                      value="weekly"
-                      checked={preferences.frequency === 'weekly'}
-                      onChange={(e) => setPreferences(prev => ({
-                        ...prev,
-                        frequency: e.target.value as 'immediate' | 'daily' | 'weekly'
-                      }))}
-                      className="h-4 w-4 text-purple-600 focus:ring-purple-500"
-                    />
-                    <span className="ml-3 text-gray-900 dark:text-white">
-                      Hebdomadaire - Un résumé chaque semaine
-                    </span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Résumé hebdomadaire */}
-              {preferences.frequency !== 'weekly' && (
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-base font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                        <ChartBarIcon className="w-4 h-4 text-primary-500" />
-                        Résumé hebdomadaire
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        Recevoir un récapitulatif chaque semaine en plus des notifications
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setPreferences(prev => ({
-                        ...prev,
-                        weeklySummary: !prev.weeklySummary
-                      }))}
-                      className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                        preferences.weeklySummary
-                          ? 'bg-purple-600'
-                          : 'bg-gray-300 dark:bg-gray-600'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                          preferences.weeklySummary ? 'translate-x-7' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Boutons d'action */}
-              <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={loadPreferences}
-                  className="px-6 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={savePreferences}
-                  disabled={isSaving}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {isSaving ? (
-                    <>
-                      <LoadingSpinner size="sm" />
-                      <span>Enregistrement...</span>
-                    </>
-                  ) : (
-                    <>
-                      <SaveIcon className="w-4 h-4" />
-                      <span>Enregistrer les préférences</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* ── En-tête ── */}
+        <div>
+          <h1 className="text-2xl font-black text-primary flex items-center gap-2 mb-1">
+            <BellIcon className="w-6 h-6 text-primary-500 shrink-0" />
+            Paramètres
+          </h1>
+          <p className="text-secondary text-sm">Notifications et préférences du compte</p>
         </div>
-        {/* Bouton Déconnexion */}
-        <div className="flex justify-center items-start pt-5 mb-10">
+
+        {/* ── Profil ── */}
+        <Card>
+          <div className="flex items-center gap-4">
+            <div
+              className="w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-white font-black text-lg shadow-md"
+              style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' }}
+            >
+              {(user?.firstName?.[0] || user?.username?.[0] || 'U').toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="font-bold text-primary truncate">{user?.firstName || user?.username}</p>
+              <p className="text-xs text-secondary truncate">{user?.email}</p>
+            </div>
+            <button
+              onClick={logout}
+              className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer ml-auto"
+            >
+              <LogoutIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">Déconnexion</span>
+            </button>
+          </div>
+        </Card>
+
+        {/* ── Spotify ── */}
+        <SpotifyConnect />
+
+        {/* ── Feedback sauvegarde ── */}
+        {saveStatus !== 'idle' && (
+          <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium animate-entrance ${
+            saveStatus === 'success'
+              ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400'
+              : 'bg-red-50 dark:bg-red-900/15 border border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400'
+          }`}>
+            {saveStatus === 'success'
+              ? <><CheckCircleIcon className="w-4 h-4 shrink-0" /> Préférences enregistrées !</>
+              : <><XCircleIcon className="w-4 h-4 shrink-0" /> Erreur lors de l'enregistrement</>
+            }
+          </div>
+        )}
+
+        {/* ── Notifications email ── */}
+        <Card>
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <SectionTitle icon={<MailIcon className="w-4 h-4 text-primary-500 shrink-0" />}>
+                Notifications par email
+              </SectionTitle>
+              <p className="text-xs text-secondary">Recevoir des emails pour les nouvelles sorties</p>
+            </div>
+            <Toggle
+              checked={preferences.emailNotifications}
+              onChange={() => setPreferences(p => ({ ...p, emailNotifications: !p.emailNotifications }))}
+            />
+          </div>
+        </Card>
+
+        {/* ── Types de sorties ── */}
+        <Card>
+          <SectionTitle icon={<MusicalNotesIcon className="w-4 h-4 text-primary-500 shrink-0" />}>
+            Types de sorties à suivre
+          </SectionTitle>
+          <div className="space-y-2">
+            {[
+              { key: 'newAlbum',       Icon: DiscIcon,      color: 'text-violet-500', label: 'Albums',           sub: 'Albums complets' },
+              { key: 'newSingle',      Icon: MusicNoteIcon, color: 'text-emerald-500', label: 'Singles',          sub: 'Singles et morceaux' },
+              { key: 'newCompilation', Icon: VinylIcon,     color: 'text-blue-500',    label: 'Compilations & EP', sub: 'EP et compilations' },
+            ].map(({ key, Icon, color, label, sub }) => (
+              <label
+                key={key}
+                className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-white/8 hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
+              >
+                <Icon className={`w-5 h-5 shrink-0 ${color}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-primary">{label}</p>
+                  <p className="text-xs text-secondary">{sub}</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={preferences.notificationTypes[key as keyof typeof preferences.notificationTypes]}
+                  onChange={e => setPreferences(p => ({
+                    ...p,
+                    notificationTypes: { ...p.notificationTypes, [key]: e.target.checked },
+                  }))}
+                  className="h-4 w-4 shrink-0 text-primary-500 rounded focus:ring-primary-400 accent-primary-500"
+                />
+              </label>
+            ))}
+          </div>
+        </Card>
+
+        {/* ── Fréquence ── */}
+        <Card>
+          <SectionTitle icon={<ClockIcon className="w-4 h-4 text-primary-500 shrink-0" />}>
+            Fréquence
+          </SectionTitle>
+          <div className="space-y-2">
+            {[
+              { value: 'immediate', label: 'Immédiatement', sub: 'Dès qu\'une sortie est détectée' },
+              { value: 'daily',     label: 'Quotidien',     sub: 'Un résumé chaque jour' },
+              { value: 'weekly',    label: 'Hebdomadaire',  sub: 'Un résumé chaque semaine' },
+            ].map(({ value, label, sub }) => (
+              <label
+                key={value}
+                className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-white/8 hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
+              >
+                <input
+                  type="radio"
+                  name="frequency"
+                  value={value}
+                  checked={preferences.frequency === value}
+                  onChange={e => setPreferences(p => ({ ...p, frequency: e.target.value as typeof p.frequency }))}
+                  className="h-4 w-4 shrink-0 text-primary-500 accent-primary-500"
+                />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-primary">{label}</p>
+                  <p className="text-xs text-secondary">{sub}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </Card>
+
+        {/* ── Résumé hebdo ── */}
+        {preferences.frequency !== 'weekly' && (
+          <Card>
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <SectionTitle icon={<ChartBarIcon className="w-4 h-4 text-primary-500 shrink-0" />}>
+                  Résumé hebdomadaire
+                </SectionTitle>
+                <p className="text-xs text-secondary">Récapitulatif chaque semaine en plus des notifications</p>
+              </div>
+              <Toggle
+                checked={!!preferences.weeklySummary}
+                onChange={() => setPreferences(p => ({ ...p, weeklySummary: !p.weeklySummary }))}
+              />
+            </div>
+          </Card>
+        )}
+
+        {/* ── Boutons action ── */}
+        <div className="flex flex-col sm:flex-row gap-3 pt-1">
           <button
-            onClick={logout}
-            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center space-x-2"
+            onClick={loadPreferences}
+            className="flex-1 sm:flex-none px-5 py-2.5 btn-secondary rounded-xl text-sm font-semibold cursor-pointer"
           >
-            <LogoutIcon className="w-4 h-4" />
-            <span>Déconnexion</span>
+            Annuler
+          </button>
+          <button
+            onClick={savePreferences}
+            disabled={isSaving}
+            className="flex-1 flex items-center justify-center gap-2 px-5 py-2.5 btn-primary rounded-xl text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {isSaving
+              ? <><LoadingSpinner size="sm" /><span>Enregistrement…</span></>
+              : <><SaveIcon className="w-4 h-4" /><span>Enregistrer</span></>
+            }
           </button>
         </div>
+
       </div>
-    </>
+    </div>
   );
 };
 

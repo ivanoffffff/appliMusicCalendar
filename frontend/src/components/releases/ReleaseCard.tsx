@@ -107,14 +107,14 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, onPlay, isPlaying = 
         {/* Badge temporel (top-right) */}
         {isNew && (
           <div className="absolute top-2.5 right-2.5">
-            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-400 to-green-500 text-white shadow-sm animate-pulse-slow">
+            <span className="inline-flex items-center text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-400 to-green-500 text-white shadow-sm animate-pulse-slow leading-none">
               NEW
             </span>
           </div>
         )}
         {isUpcoming && (
           <div className="absolute top-2.5 right-2.5">
-            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-400 to-amber-500 text-white shadow-sm">
+            <span className="inline-flex items-center text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-400 to-amber-500 text-white shadow-sm leading-none">
               {daysDiff <= 7 ? `J-${daysDiff}` : daysDiff <= 30 ? `${daysDiff}j` : 'BIENTÔT'}
             </span>
           </div>
