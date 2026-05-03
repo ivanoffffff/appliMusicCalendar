@@ -197,12 +197,10 @@ class SpotifyUserService {
     for (const albumId of releaseSpotifyIds) {
       let url: string | null = `${this.API_URL}/albums/${albumId}/tracks?limit=50`;
       while (url) {
-        const page = await spotifyClient.get<{
-          items: Array<{ uri: string }>;
-          next: string | null;
-        }>(url, { headers });
-        trackUris.push(...page.data.items.map(t => t.uri));
-        url = page.data.next;
+        const pageData: { items: Array<{ uri: string }>; next: string | null } =
+          (await spotifyClient.get(url, { headers })).data;
+        trackUris.push(...pageData.items.map(t => t.uri));
+        url = pageData.next;
       }
     }
 
