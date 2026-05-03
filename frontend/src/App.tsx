@@ -115,17 +115,28 @@ function AppContent() {
   );
 }
 
+function AppShell() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const showSidebar = isAuthenticated && !isLoading;
+
+  return (
+    <>
+      {showSidebar && <Sidebar />}
+      <div className={showSidebar ? 'pl-14 md:pl-60' : ''}>
+        <AppContent />
+        <MiniPlayer />
+      </div>
+    </>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
         <Router>
           <SpotifyPlayerProvider>
-            <Sidebar />
-            <div className="pl-14 md:pl-60">
-              <AppContent />
-              <MiniPlayer />
-            </div>
+            <AppShell />
           </SpotifyPlayerProvider>
         </Router>
       </AuthProvider>
