@@ -399,15 +399,6 @@ const ReleasesPage: React.FC = () => {
                   <span className="hidden sm:inline">Créer une playlist</span>
                 </button>
               )}
-              {isSelecting && (
-                <button
-                  onClick={exitSelecting}
-                  className="flex items-center gap-1.5 px-3 py-2 btn-secondary text-xs font-semibold rounded-xl cursor-pointer"
-                >
-                  <XIcon className="w-3.5 h-3.5" />
-                  Annuler
-                </button>
-              )}
 
               {/* Bouton Sync */}
               <div className="relative">
@@ -556,21 +547,34 @@ const ReleasesPage: React.FC = () => {
 
       {/* ══════════ BARRE FLOTTANTE SÉLECTION ══════════ */}
       {isSelecting && (
-        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 animate-entrance">
-          <div className="flex items-center gap-3 px-5 py-3 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-white/10 backdrop-blur-xl">
-            <span className="text-sm font-bold text-primary whitespace-nowrap">
-              {selectedIds.size === 0
-                ? 'Sélectionnez des sorties'
-                : `${selectedIds.size} sortie${selectedIds.size > 1 ? 's' : ''} sélectionnée${selectedIds.size > 1 ? 's' : ''}`}
-            </span>
-            <button
-              onClick={openPlaylistModal}
-              disabled={selectedIds.size === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white text-sm font-bold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity cursor-pointer"
-            >
-              <PlaylistAddIcon className="w-4 h-4" />
-              Créer la playlist
-            </button>
+        <div className="fixed bottom-0 left-0 right-0 md:bottom-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto z-50 animate-entrance">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 md:px-5 md:rounded-2xl bg-white dark:bg-slate-800 shadow-2xl border-t md:border border-gray-100 dark:border-white/10 backdrop-blur-xl
+            pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-3">
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-semibold text-secondary uppercase tracking-wider">Playlist</span>
+              <span className="text-sm font-bold text-primary">
+                {selectedIds.size === 0
+                  ? 'Sélectionnez des sorties'
+                  : `${selectedIds.size} sortie${selectedIds.size > 1 ? 's' : ''} choisie${selectedIds.size > 1 ? 's' : ''}`}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={exitSelecting}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl btn-secondary text-xs font-semibold cursor-pointer"
+              >
+                <XIcon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Annuler</span>
+              </button>
+              <button
+                onClick={openPlaylistModal}
+                disabled={selectedIds.size === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white text-sm font-bold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity cursor-pointer"
+              >
+                <PlaylistAddIcon className="w-4 h-4" />
+                <span>Créer</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
