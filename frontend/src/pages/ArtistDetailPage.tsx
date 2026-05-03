@@ -348,7 +348,16 @@ const ArtistDetailPage: React.FC = () => {
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <MusicNoteIcon className="w-12 h-12 text-secondary mb-3" />
-            <p className="text-primary font-semibold">Aucune sortie dans cette catégorie</p>
+            {activeType !== 'ALL' ? (
+              <p className="text-primary font-semibold">Aucune sortie dans cette catégorie</p>
+            ) : !isFav ? (
+              <>
+                <p className="text-primary font-semibold mb-1">Aucune sortie trackée</p>
+                <p className="text-secondary text-sm">Suis cet artiste pour tracker ses sorties automatiquement.</p>
+              </>
+            ) : (
+              <p className="text-primary font-semibold">Aucune sortie disponible</p>
+            )}
           </div>
         )}
       </div>
