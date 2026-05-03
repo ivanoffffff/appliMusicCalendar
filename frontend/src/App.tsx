@@ -13,6 +13,7 @@ import SpotifyCallbackPage from './pages/SpotifyCallbackPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 import { SpotifyPlayerProvider } from './contexts/SpotifyPlayerContext';
 import MiniPlayer from './components/player/MiniPlayer';
+import Sidebar from './components/ui/Sidebar';
 
 // Composant pour protéger les routes privées
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -120,8 +121,11 @@ function App() {
       <AuthProvider>
         <Router>
           <SpotifyPlayerProvider>
-            <AppContent />
-            <MiniPlayer />
+            <Sidebar />
+            <div className="md:pl-60">
+              <AppContent />
+              <MiniPlayer />
+            </div>
           </SpotifyPlayerProvider>
         </Router>
       </AuthProvider>
