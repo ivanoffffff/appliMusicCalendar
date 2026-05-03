@@ -82,17 +82,26 @@ class ReleaseService {
         return { message: 'Aucun artiste favori trouvé', releases: [] };
       }
 
-      // Préférer le token utilisateur pour éviter le rate limit partagé
+      // Préférer le token utilisateur (limites par compte) sinon token client
       const userToken = await spotifyUserService.getValidAccessToken(userId).catch(() => undefined);
 
-      // ── Étape 1 : fetch Spotify séquentiellement avec délai pour éviter le 429 ─
+      // ── Étape 1 : fetch Spotify séquentiellement, stop immédiat sur 429 ────────
       const artistReleasesList: Array<{ artist: any; releases: SpotifyAlbum[] }> = [];
       for (const { artist } of userFavorites) {
         if (!artist.spotifyId) continue;
-        const releases = await this.getArtistReleases(artist.spotifyId, userToken);
-        if (releases.length > 0) artistReleasesList.push({ artist, releases });
-        // Petit délai entre chaque requête pour ménager le rate limit
-        await new Promise(r => setTimeout(r, 100));
+        try {
+          const releases = await this.getArtistReleases(artist.spotifyId, userToken);
+          if (releases.length > 0) artistReleasesList.push({ artist, releases });
+        } catch (err: any) {
+          const status = err?.response?.status;
+          if (status === 429) {
+            const retryAfter = err?.response?.headers?.['retry-after'];
+            console.warn(`⚠️ Rate limit Spotify (429) après ${artistReleasesList.length} artiste(s). retry-after: ${retryAfter}s. Sync partielle.`);
+            break; // On arrête et on traite ce qu'on a déjà
+          }
+          console.error(`Erreur albums ${artist.name}:`, err?.message ?? err);
+        }
+        await new Promise(r => setTimeout(r, 300));
       }
 
       // ── Étape 2 : une seule requête DB pour savoir quelles releases existent ──
@@ -297,32 +306,24 @@ class ReleaseService {
   }
 
   async getArtistReleases(spotifyArtistId: string, accessToken?: string): Promise<SpotifyAlbum[]> {
-    try {
-      const token = accessToken ?? await (spotifyService as any).getAccessToken();
+    const token = accessToken ?? await (spotifyService as any).getAccessToken();
 
-      const { data } = await spotifyClient.get<{ items: SpotifyAlbum[] }>(
-        `https://api.spotify.com/v1/artists/${spotifyArtistId}/albums`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { include_groups: 'album,single,compilation', limit: 50 },
-        }
-      );
-      
-      // Inclure les sorties depuis 3 mois en arrière jusqu'à 6 mois dans le futur
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    // Laisser remonter les erreurs (429 notamment) pour que l'appelant puisse réagir
+    const { data } = await spotifyClient.get<{ items: SpotifyAlbum[] }>(
+      `https://api.spotify.com/v1/artists/${spotifyArtistId}/albums`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { include_groups: 'album,single,compilation', limit: 50 },
+      }
+    );
 
-      const threeMonthsAhead = new Date();
-      threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3);
+    const threeMonthsAgo   = new Date(); threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const threeMonthsAhead = new Date(); threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3);
 
-      return data.items.filter((album: SpotifyAlbum) => {
-        const releaseDate = new Date(album.release_date);
-        return releaseDate >= threeMonthsAgo && releaseDate <= threeMonthsAhead;
-      });
-    } catch (error) {
-      console.error('Erreur récupération albums artiste:', error);
-      return [];
-    }
+    return data.items.filter((album: SpotifyAlbum) => {
+      const d = new Date(album.release_date);
+      return d >= threeMonthsAgo && d <= threeMonthsAhead;
+    });
   }
 
   async getUserReleases(userId: string, startDate?: Date, endDate?: Date) {
