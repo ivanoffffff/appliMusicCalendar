@@ -113,11 +113,31 @@ class ArtistController {
       });
 
       if (!artist) {
-        // Artiste pas en DB → fetch depuis l'API Spotify publique
-        const spotifyArtist = await spotifyService.getArtistById(spotifyId);
+        // Artiste pas en DB → fetch ses infos + sorties depuis Spotify
+        const [spotifyArtist, spotifyAlbums] = await Promise.all([
+          spotifyService.getArtistById(spotifyId),
+          spotifyService.getArtistAlbums(spotifyId),
+        ]);
         if (!spotifyArtist) {
           return res.status(404).json({ success: false, message: 'Artiste introuvable' });
         }
+        const releases = spotifyAlbums.map(album => ({
+          id:          album.id,
+          spotifyId:   album.id,
+          name:        album.name,
+          releaseType: album.releaseType,
+          releaseDate: album.releaseDate,
+          imageUrl:    album.imageUrl,
+          spotifyUrl:  album.spotifyUrl,
+          deezerUrl:   null,
+          trackCount:  album.trackCount,
+          artist: {
+            id:        spotifyArtist.spotifyId,
+            name:      spotifyArtist.name,
+            spotifyId: spotifyArtist.spotifyId,
+            imageUrl:  spotifyArtist.imageUrl,
+          },
+        }));
         return res.json({
           success: true,
           data: {
@@ -131,7 +151,7 @@ class ArtistController {
             spotifyUrl: spotifyArtist.spotifyUrl,
             deezerUrl:  null,
             isFavorite: false,
-            releases:   [],
+            releases,
           },
         });
       }

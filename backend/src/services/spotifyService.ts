@@ -103,6 +103,67 @@ class SpotifyService {
     };
   }
 
+  // ── Sorties d'un artiste depuis Spotify ──────────────────────────────────
+  async getArtistAlbums(spotifyId: string): Promise<Array<{
+    id: string;
+    name: string;
+    releaseType: 'ALBUM' | 'SINGLE' | 'EP';
+    releaseDate: string;
+    imageUrl?: string;
+    spotifyUrl: string;
+    trackCount: number;
+  }>> {
+    try {
+      const accessToken = await this.getAccessToken();
+      const headers = { Authorization: `Bearer ${accessToken}` };
+
+      const ALBUM_TYPE_MAP: Record<string, 'ALBUM' | 'SINGLE' | 'EP'> = {
+        album:       'ALBUM',
+        single:      'SINGLE',
+        compilation: 'EP',
+      };
+
+      const results: Array<{
+        id: string; name: string; releaseType: 'ALBUM' | 'SINGLE' | 'EP';
+        releaseDate: string; imageUrl?: string; spotifyUrl: string; trackCount: number;
+      }> = [];
+
+      let url: string | null =
+        `${this.API_URL}/artists/${spotifyId}/albums?include_groups=album,single,compilation&limit=50&market=FR`;
+
+      type AlbumsPage = {
+        items: Array<{
+          id: string; name: string; album_type: string;
+          release_date: string; images: Array<{ url: string }>;
+          external_urls: { spotify: string }; total_tracks: number;
+        }>;
+        next: string | null;
+      };
+
+      while (url) {
+        const page: AlbumsPage = (await spotifyClient.get(url, { headers })).data;
+
+        for (const item of page.items) {
+          results.push({
+            id:          item.id,
+            name:        item.name,
+            releaseType: ALBUM_TYPE_MAP[item.album_type] ?? 'SINGLE',
+            releaseDate: item.release_date,
+            imageUrl:    item.images?.[0]?.url,
+            spotifyUrl:  item.external_urls.spotify,
+            trackCount:  item.total_tracks,
+          });
+        }
+        url = page.next;
+      }
+
+      return results;
+    } catch (error) {
+      console.error('❌ Error fetching artist albums:', error);
+      return [];
+    }
+  }
+
   // Test de connexion
   async testConnection(): Promise<boolean> {
     try {
