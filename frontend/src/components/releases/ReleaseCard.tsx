@@ -8,6 +8,8 @@ interface ReleaseCardProps {
   release:    Release;
   onPlay?:    (spotifyId: string) => void;
   isPlaying?: boolean;
+  selected?:  boolean;
+  onSelect?:  () => void;
 }
 
 type TypeConfig = { label: string; Icon: React.FC<{ className?: string }>; color: string; gradientFrom: string; gradientTo: string };
@@ -28,7 +30,7 @@ const PauseIcon = () => (
   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
 );
 
-const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, onPlay, isPlaying = false }) => {
+const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, onPlay, isPlaying = false, selected = false, onSelect }) => {
   const navigate = useNavigate();
   const [imageError, setImageError] = useState(false);
 
@@ -44,15 +46,22 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, onPlay, isPlaying = 
   const isUpcoming  = releaseDate > now;
   const daysDiff    = Math.ceil((releaseDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-  const canPlay = !!onPlay && !!release.spotifyId && !isUpcoming;
+  const canPlay = !!onPlay && !!release.spotifyId && !isUpcoming && !onSelect;
 
   return (
-    <div className={`group relative rounded-2xl overflow-hidden bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 shadow-card dark:shadow-none hover:shadow-card-hover dark:hover:shadow-glow hover:-translate-y-1.5 transition-all duration-300 animate-entrance dark:backdrop-blur-sm ${isPlaying ? 'ring-2 ring-[#1db954]/50' : ''}`}>
+    <div
+      className={`group relative rounded-2xl overflow-hidden bg-white dark:bg-white/5 border shadow-card dark:shadow-none hover:shadow-card-hover dark:hover:shadow-glow hover:-translate-y-1.5 transition-all duration-300 animate-entrance dark:backdrop-blur-sm ${
+        isPlaying  ? 'ring-2 ring-[#1db954]/50 border-transparent' :
+        selected   ? 'ring-2 ring-primary-500 border-transparent' :
+        'border-gray-100 dark:border-white/8'
+      }`}
+      onClick={onSelect}
+    >
 
       {/* ── Image pleine largeur ── */}
       <div
-        className={`relative aspect-square overflow-hidden bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/40 dark:to-accent-900/40 ${canPlay ? 'cursor-pointer' : ''}`}
-        onClick={canPlay ? () => onPlay!(release.spotifyId!) : undefined}
+        className={`relative aspect-square overflow-hidden bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/40 dark:to-accent-900/40 ${canPlay ? 'cursor-pointer' : onSelect ? 'cursor-pointer' : ''}`}
+        onClick={canPlay ? (e) => { e.stopPropagation(); onPlay!(release.spotifyId!); } : undefined}
       >
         {release.imageUrl && !imageError ? (
           <img
@@ -70,13 +79,30 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({ release, onPlay, isPlaying = 
         {/* Gradient overlay bas */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
+        {/* Checkbox sélection (top-left en mode playlist) */}
+        {onSelect && (
+          <div className={`absolute top-2.5 left-2.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-150 shadow-sm ${
+            selected
+              ? 'bg-primary-500 border-primary-500'
+              : 'bg-black/30 border-white/80 backdrop-blur-sm'
+          }`}>
+            {selected && (
+              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            )}
+          </div>
+        )}
+
         {/* Badge type (top-left) */}
-        <div className="absolute top-2.5 left-2.5">
-          <span className={`flex items-center gap-1 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm`}>
-            <TypeIcon className="w-3 h-3" />
-            {config.label}
-          </span>
-        </div>
+        {!onSelect && (
+          <div className="absolute top-2.5 left-2.5">
+            <span className={`flex items-center gap-1 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm`}>
+              <TypeIcon className="w-3 h-3" />
+              {config.label}
+            </span>
+          </div>
+        )}
 
         {/* Badge temporel (top-right) */}
         {isNew && (

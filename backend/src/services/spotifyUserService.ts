@@ -47,6 +47,8 @@ class SpotifyUserService {
     'user-library-modify',
     'user-library-read',
     'user-follow-modify',
+    'playlist-modify-public',
+    'playlist-modify-private',
   ].join(' ');
 
   // Lus à l'appel (pas à l'instanciation) pour que dotenv soit déjà chargé
@@ -171,6 +173,61 @@ class SpotifyUserService {
 
     await fetchPage(`${this.API_URL}/me/following?type=artist&limit=50`);
     return artists;
+  }
+
+  // ── Crée une playlist Spotify avec les tracks de plusieurs sorties ────────
+  async createPlaylist(
+    userId: string,
+    name: string,
+    releaseSpotifyIds: string[],
+  ): Promise<{ playlistId: string; playlistUrl: string; trackCount: number }> {
+    const record = await prisma.spotifyToken.findUnique({ where: { userId } });
+    if (!record) throw new Error('Compte Spotify non connecté');
+    if (!record.scope?.includes('playlist-modify')) throw new Error('MISSING_PLAYLIST_SCOPE');
+
+    const accessToken = await this.getValidAccessToken(userId);
+    const headers = { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' };
+
+    // Profil utilisateur (pour l'endpoint de création de playlist)
+    const meRes = await spotifyClient.get<{ id: string }>(`${this.API_URL}/me`, { headers });
+    const spotifyUserId = meRes.data.id;
+
+    // Collect all track URIs from every release
+    const trackUris: string[] = [];
+    for (const albumId of releaseSpotifyIds) {
+      let url: string | null = `${this.API_URL}/albums/${albumId}/tracks?limit=50`;
+      while (url) {
+        const page = await spotifyClient.get<{
+          items: Array<{ uri: string }>;
+          next: string | null;
+        }>(url, { headers });
+        trackUris.push(...page.data.items.map(t => t.uri));
+        url = page.data.next;
+      }
+    }
+
+    // Create playlist
+    const createRes = await spotifyClient.post<{
+      id: string;
+      external_urls: { spotify: string };
+    }>(
+      `${this.API_URL}/users/${spotifyUserId}/playlists`,
+      { name, description: 'Créée depuis Music Tracker', public: true },
+      { headers },
+    );
+    const playlistId  = createRes.data.id;
+    const playlistUrl = createRes.data.external_urls.spotify;
+
+    // Add tracks in batches of 100 (Spotify limit)
+    for (let i = 0; i < trackUris.length; i += 100) {
+      await spotifyClient.post(
+        `${this.API_URL}/playlists/${playlistId}/tracks`,
+        { uris: trackUris.slice(i, i + 100) },
+        { headers },
+      );
+    }
+
+    return { playlistId, playlistUrl, trackCount: trackUris.length };
   }
 
   // ── Helpers statut ────────────────────────────────────────────────────────

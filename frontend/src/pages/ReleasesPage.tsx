@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import type { Release, CalendarEvent } from '../types';
-import { releaseService } from '../services/api';
+import { releaseService, spotifyAccountService } from '../services/api';
 import ReleaseCard from '../components/releases/ReleaseCard';
 import Header from '../components/ui/Header';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -20,6 +20,19 @@ import {
   MicrophoneIcon,
   CheckCircleIcon,
 } from '../components/ui/Icons';
+
+// ─── Icône playlist ───────────────────────────────────────────────────────────
+const PlaylistAddIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 17H5a2 2 0 00-2 2v0a2 2 0 002 2h4m6-4v4m2-2h-4M3 7h18M3 12h12" />
+  </svg>
+);
+
+const XIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type View   = 'list' | 'calendar';
@@ -73,6 +86,15 @@ const ReleasesPage: React.FC = () => {
   const [selectedRelease,  setSelectedRelease]  = useState<Release | null>(null);
   const [view,             setView]             = useState<View>('list');
   const [filter,           setFilter]           = useState<Filter>('all');
+
+  // ── Mode création de playlist ──────────────────────────────────────────
+  const [isSelecting,    setIsSelecting]    = useState(false);
+  const [selectedIds,    setSelectedIds]    = useState<Set<string>>(new Set());
+  const [playlistModal,  setPlaylistModal]  = useState(false);
+  const [playlistName,   setPlaylistName]   = useState('');
+  const [isCreating,     setIsCreating]     = useState(false);
+  const [createdUrl,     setCreatedUrl]     = useState<string | null>(null);
+  const [needsReauth,    setNeedsReauth]    = useState(false);
 
   const { isReady, playAlbum, currentAlbumId, isPlaying, isPremiumError } = useSpotifyPlayer();
 
@@ -163,6 +185,55 @@ const ReleasesPage: React.FC = () => {
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  // ── Sélection pour playlist ────────────────────────────────────────────
+  const toggleSelect = (spotifyId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(spotifyId) ? next.delete(spotifyId) : next.add(spotifyId);
+      return next;
+    });
+  };
+
+  const exitSelecting = () => {
+    setIsSelecting(false);
+    setSelectedIds(new Set());
+    setPlaylistModal(false);
+    setCreatedUrl(null);
+    setNeedsReauth(false);
+    setPlaylistName('');
+  };
+
+  const openPlaylistModal = () => {
+    const now = new Date();
+    const month = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(now);
+    setPlaylistName(`Mes sorties – ${month}`);
+    setCreatedUrl(null);
+    setNeedsReauth(false);
+    setPlaylistModal(true);
+  };
+
+  const createPlaylist = async () => {
+    if (!playlistName.trim() || selectedIds.size === 0) return;
+    setIsCreating(true);
+    try {
+      const result = await spotifyAccountService.createPlaylist(
+        playlistName.trim(),
+        Array.from(selectedIds),
+      );
+      setCreatedUrl(result.playlistUrl);
+      showToast(`Playlist créée ! ${result.trackCount} titre${result.trackCount > 1 ? 's' : ''} ajouté${result.trackCount > 1 ? 's' : ''}`, true);
+    } catch (err: any) {
+      if (err?.response?.data?.message === 'MISSING_PLAYLIST_SCOPE') {
+        setNeedsReauth(true);
+      } else {
+        showToast(err?.response?.data?.message || 'Erreur lors de la création de la playlist', false);
+        setPlaylistModal(false);
+      }
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   // ── Filtrage ──────────────────────────────────────────────────────────
@@ -317,20 +388,41 @@ const ReleasesPage: React.FC = () => {
               )}
             </div>
 
-            {/* Bouton Sync */}
-            <div className="relative">
-              <button
-                onClick={syncReleases}
-                disabled={isSyncing || isAutoSyncing}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-spotify-500 to-spotify-600 hover:from-spotify-600 hover:to-spotify-700 text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                <RefreshIcon className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">{isSyncing ? 'Sync…' : 'Synchroniser'}</span>
-              </button>
-              {/* Point clignotant discret quand l'auto-sync tourne */}
-              {isAutoSyncing && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-sm" />
+            <div className="flex items-center gap-2">
+              {/* Bouton Créer une playlist */}
+              {view === 'list' && releases.length > 0 && !isSelecting && (
+                <button
+                  onClick={() => setIsSelecting(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-accent-500 hover:opacity-90 text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <PlaylistAddIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Créer une playlist</span>
+                </button>
               )}
+              {isSelecting && (
+                <button
+                  onClick={exitSelecting}
+                  className="flex items-center gap-1.5 px-3 py-2 btn-secondary text-xs font-semibold rounded-xl cursor-pointer"
+                >
+                  <XIcon className="w-3.5 h-3.5" />
+                  Annuler
+                </button>
+              )}
+
+              {/* Bouton Sync */}
+              <div className="relative">
+                <button
+                  onClick={syncReleases}
+                  disabled={isSyncing || isAutoSyncing}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-spotify-500 to-spotify-600 hover:from-spotify-600 hover:to-spotify-700 text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+                >
+                  <RefreshIcon className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">{isSyncing ? 'Sync…' : 'Synchroniser'}</span>
+                </button>
+                {isAutoSyncing && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-sm" />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -445,8 +537,10 @@ const ReleasesPage: React.FC = () => {
                             >
                               <ReleaseCard
                                 release={release}
-                                onPlay={isReady ? handlePlay : undefined}
-                                isPlaying={isPlaying && currentAlbumId === release.spotifyId}
+                                onPlay={isSelecting || !isReady ? undefined : handlePlay}
+                                isPlaying={!isSelecting && isPlaying && currentAlbumId === release.spotifyId}
+                                selected={release.spotifyId ? selectedIds.has(release.spotifyId) : false}
+                                onSelect={isSelecting && release.spotifyId ? () => toggleSelect(release.spotifyId!) : undefined}
                               />
                             </div>
                           ))}
@@ -459,6 +553,131 @@ const ReleasesPage: React.FC = () => {
           </>
         )}
       </main>
+
+      {/* ══════════ BARRE FLOTTANTE SÉLECTION ══════════ */}
+      {isSelecting && (
+        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 animate-entrance">
+          <div className="flex items-center gap-3 px-5 py-3 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-white/10 backdrop-blur-xl">
+            <span className="text-sm font-bold text-primary whitespace-nowrap">
+              {selectedIds.size === 0
+                ? 'Sélectionnez des sorties'
+                : `${selectedIds.size} sortie${selectedIds.size > 1 ? 's' : ''} sélectionnée${selectedIds.size > 1 ? 's' : ''}`}
+            </span>
+            <button
+              onClick={openPlaylistModal}
+              disabled={selectedIds.size === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white text-sm font-bold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity cursor-pointer"
+            >
+              <PlaylistAddIcon className="w-4 h-4" />
+              Créer la playlist
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ MODAL PLAYLIST ══════════ */}
+      {playlistModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => !isCreating && setPlaylistModal(false)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div
+            className="relative z-10 w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 animate-entrance"
+            onClick={e => e.stopPropagation()}
+          >
+            {createdUrl ? (
+              /* ── Succès ── */
+              <>
+                <div className="flex flex-col items-center text-center gap-3 py-2">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shadow-lg">
+                    <CheckCircleIcon className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="font-black text-lg text-primary">Playlist créée !</h3>
+                  <p className="text-sm text-secondary">Ta playlist <span className="font-semibold text-primary">"{playlistName}"</span> est maintenant disponible sur Spotify.</p>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button onClick={exitSelecting} className="flex-1 btn-secondary py-2.5 text-sm font-semibold rounded-xl cursor-pointer">Fermer</button>
+                  <a
+                    href={createdUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#1db954] hover:bg-[#17a349] text-white text-sm font-bold rounded-xl transition-colors"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                    Ouvrir sur Spotify
+                  </a>
+                </div>
+              </>
+            ) : needsReauth ? (
+              /* ── Scopes manquants ── */
+              <>
+                <h3 className="font-black text-lg text-primary mb-2">Permissions requises</h3>
+                <p className="text-sm text-secondary mb-5">
+                  Pour créer des playlists, tu dois reconnecter ton compte Spotify avec les nouvelles permissions.
+                </p>
+                <div className="flex gap-3">
+                  <button onClick={() => setPlaylistModal(false)} className="flex-1 btn-secondary py-2.5 text-sm font-semibold rounded-xl cursor-pointer">Annuler</button>
+                  <button
+                    onClick={async () => {
+                      const { url } = await spotifyAccountService.getAuthUrl();
+                      window.location.href = url;
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#1db954] hover:bg-[#17a349] text-white text-sm font-bold rounded-xl transition-colors cursor-pointer"
+                  >
+                    Reconnecter Spotify
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* ── Formulaire ── */
+              <>
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="font-black text-lg text-primary">Nouvelle playlist</h3>
+                  <button onClick={() => setPlaylistModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-700 text-secondary hover:text-primary transition-colors cursor-pointer">
+                    <XIcon className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <p className="text-sm text-secondary mb-4">
+                  <span className="font-semibold text-primary">{selectedIds.size} sortie{selectedIds.size > 1 ? 's' : ''}</span> sélectionnée{selectedIds.size > 1 ? 's' : ''} · Toutes les pistes seront ajoutées.
+                </p>
+
+                <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
+                  Nom de la playlist
+                </label>
+                <input
+                  type="text"
+                  value={playlistName}
+                  onChange={e => setPlaylistName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && createPlaylist()}
+                  placeholder="Ma playlist..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 transition mb-5"
+                  autoFocus
+                />
+
+                <div className="flex gap-3">
+                  <button onClick={() => setPlaylistModal(false)} className="flex-1 btn-secondary py-2.5 text-sm font-semibold rounded-xl cursor-pointer">Annuler</button>
+                  <button
+                    onClick={createPlaylist}
+                    disabled={isCreating || !playlistName.trim()}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-primary-500 to-accent-500 text-white text-sm font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition cursor-pointer"
+                  >
+                    {isCreating ? (
+                      <>
+                        <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeOpacity=".25" strokeWidth={2}/><path d="M12 2a10 10 0 0 1 10 10" strokeWidth={2}/></svg>
+                        Création…
+                      </>
+                    ) : (
+                      <>
+                        <PlaylistAddIcon className="w-4 h-4" />
+                        Créer
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ══════════ MODAL CALENDRIER ══════════ */}
       {selectedRelease && (

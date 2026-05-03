@@ -158,6 +158,39 @@ router.get('/token', authenticateToken, async (req: Request, res: Response) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// POST /api/spotify/playlist
+// Crée une playlist Spotify avec toutes les tracks des sorties sélectionnées.
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/playlist', authenticateToken, async (req: Request, res: Response) => {
+  const { name, releaseSpotifyIds } = req.body as {
+    name?: string;
+    releaseSpotifyIds?: string[];
+  };
+
+  if (!name?.trim()) {
+    return res.status(400).json({ success: false, message: 'Le nom de la playlist est requis' });
+  }
+  if (!Array.isArray(releaseSpotifyIds) || releaseSpotifyIds.length === 0) {
+    return res.status(400).json({ success: false, message: 'Aucune sortie sélectionnée' });
+  }
+
+  try {
+    const result = await spotifyUserService.createPlaylist(
+      req.user!.userId,
+      name.trim(),
+      releaseSpotifyIds,
+    );
+    res.json({ success: true, data: result });
+  } catch (err: any) {
+    if (err.message === 'MISSING_PLAYLIST_SCOPE') {
+      return res.status(403).json({ success: false, message: 'MISSING_PLAYLIST_SCOPE' });
+    }
+    console.error('Create playlist error:', err?.response?.data ?? err);
+    res.status(500).json({ success: false, message: 'Erreur lors de la création de la playlist' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DELETE /api/spotify/disconnect
 // Supprime le token Spotify de l'utilisateur.
 // ─────────────────────────────────────────────────────────────────────────────

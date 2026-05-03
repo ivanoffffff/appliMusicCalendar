@@ -168,6 +168,18 @@ export const spotifyAccountService = {
   async disconnect(): Promise<void> {
     await api.delete('/spotify/disconnect');
   },
+
+  /** Crée une playlist Spotify avec les tracks des sorties sélectionnées */
+  async createPlaylist(
+    name: string,
+    releaseSpotifyIds: string[],
+  ): Promise<{ playlistId: string; playlistUrl: string; trackCount: number }> {
+    const response = await api.post<{
+      success: boolean;
+      data: { playlistId: string; playlistUrl: string; trackCount: number };
+    }>('/spotify/playlist', { name, releaseSpotifyIds });
+    return response.data.data;
+  },
 };
 
 export default api;
