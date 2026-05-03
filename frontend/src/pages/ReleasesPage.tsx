@@ -96,7 +96,7 @@ const ReleasesPage: React.FC = () => {
   const [createdUrl,     setCreatedUrl]     = useState<string | null>(null);
   const [needsReauth,    setNeedsReauth]    = useState(false);
 
-  const { isReady, playAlbum, currentAlbumId, isPlaying, isPremiumError } = useSpotifyPlayer();
+  const { isReady, playAlbum, currentAlbumId, isPlaying, isPremiumError, currentTrack } = useSpotifyPlayer();
 
   const handlePlay = (spotifyId: string) => {
     if (!isReady) return;
@@ -547,9 +547,10 @@ const ReleasesPage: React.FC = () => {
 
       {/* ══════════ BARRE FLOTTANTE SÉLECTION ══════════ */}
       {isSelecting && (
-        <div className="fixed bottom-0 left-0 right-0 md:bottom-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto z-50 animate-entrance">
-          <div className="flex items-center justify-between gap-3 px-4 py-3 md:px-5 md:rounded-2xl bg-white dark:bg-slate-800 shadow-2xl border-t md:border border-gray-100 dark:border-white/10 backdrop-blur-xl
-            pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-3">
+        <div className={`fixed left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto z-50 animate-entrance transition-all duration-300
+          ${currentTrack ? 'bottom-[140px]' : 'bottom-[80px]'}
+          md:bottom-6`}>
+          <div className="flex items-center justify-between gap-3 px-4 py-3 md:px-5 md:rounded-2xl bg-white dark:bg-slate-800 shadow-2xl border-t md:border border-gray-100 dark:border-white/10 backdrop-blur-xl">
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-semibold text-secondary uppercase tracking-wider">Playlist</span>
               <span className="text-sm font-bold text-primary">
