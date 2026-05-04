@@ -114,23 +114,24 @@ const ChartTooltip: React.FC<any> = ({ active, payload, label }) => {
 const HourTooltip: React.FC<any> = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
   const { hour, count, isPeak } = payload[0].payload as { hour: number; count: number; isPeak: boolean };
-  if (count === 0) return null;
 
   const nextHour = (hour + 1) % 24;
 
   return (
     <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-white/10 rounded-xl px-3.5 py-2.5 shadow-lg text-xs pointer-events-none">
-      <p className="font-bold text-primary mb-1">
-        {hour}h &ndash; {nextHour}h
-      </p>
-      <p className="text-secondary">
-        <span className="font-black text-primary-500">{count}</span>
-        {' '}écoute{count > 1 ? 's' : ''}
-      </p>
-      {isPeak && (
-        <p className="text-[10px] font-semibold text-indigo-500 dark:text-indigo-400 mt-1">
-          ★ Pic d'écoute
-        </p>
+      <p className="font-semibold text-primary mb-1">{hour}h &ndash; {nextHour}h</p>
+      {count > 0 ? (
+        <>
+          <p className="text-secondary">
+            <span className="font-black text-indigo-500">{count}</span>
+            {' '}écoute{count > 1 ? 's' : ''}
+          </p>
+          {isPeak && (
+            <p className="text-[10px] font-semibold text-indigo-400 mt-1">★ Pic d'écoute</p>
+          )}
+        </>
+      ) : (
+        <p className="text-secondary">Aucune écoute</p>
       )}
     </div>
   );
