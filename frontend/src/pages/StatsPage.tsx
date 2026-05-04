@@ -99,13 +99,40 @@ const RowSkeleton = () => (
   </div>
 );
 
-// ─── Custom chart tooltip ─────────────────────────────────────────────────────
+// ─── Custom chart tooltip (genres) ───────────────────────────────────────────
 const ChartTooltip: React.FC<any> = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-white/10 rounded-xl px-3 py-2 shadow-lg text-xs font-semibold text-primary">
       {label && <p className="text-secondary mb-0.5">{label}</p>}
       <p>{payload[0].value}</p>
+    </div>
+  );
+};
+
+// ─── Tooltip dédié au graphique horaire ───────────────────────────────────────
+const HourTooltip: React.FC<any> = ({ active, payload }) => {
+  if (!active || !payload?.length) return null;
+  const { hour, count } = payload[0].payload as { hour: number; count: number };
+  if (count === 0) return null;
+
+  const nextHour = (hour + 1) % 24;
+  const isPeak   = payload[0].fill === '#6366f1'; // couleur du pic
+
+  return (
+    <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-white/10 rounded-xl px-3.5 py-2.5 shadow-lg text-xs pointer-events-none">
+      <p className="font-bold text-primary mb-1">
+        {hour}h &ndash; {nextHour}h
+      </p>
+      <p className="text-secondary">
+        <span className="font-black text-primary-500">{count}</span>
+        {' '}écoute{count > 1 ? 's' : ''}
+      </p>
+      {isPeak && (
+        <p className="text-[10px] font-semibold text-indigo-500 dark:text-indigo-400 mt-1">
+          ★ Pic d'écoute
+        </p>
+      )}
     </div>
   );
 };
@@ -456,7 +483,7 @@ const StatsPage: React.FC = () => {
                   axisLine={false}
                 />
                 <YAxis hide />
-                <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(99,102,241,0.05)' }} />
+                <Tooltip content={<HourTooltip />} cursor={{ fill: 'rgba(99,102,241,0.05)' }} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {hourData.map((d, i) => (
                     <Cell key={i} fill={d.count === peakHour.count && d.count > 0 ? '#6366f1' : '#8b5cf650'} />
