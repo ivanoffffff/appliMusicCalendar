@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { artistService, releaseService } from '../services/api';
+import { artistService, releaseService, statsService } from '../services/api';
 import type { FavoriteArtist, Release } from '../types';
 import Header from '../components/ui/Header';
 import ReleaseCard from '../components/releases/ReleaseCard';
@@ -215,7 +215,16 @@ const StatsBlock: React.FC<{ stats: QuickStats; isLoading: boolean }> = ({ stats
 
 // ─── Block : Top artiste ──────────────────────────────────────────────────────
 
-const TopArtistBlock: React.FC<{ favorite: FavoriteArtist | undefined; isLoading: boolean }> = ({ favorite, isLoading }) => {
+interface TopArtistData {
+  name: string;
+  imageUrl?: string;
+  spotifyId?: string;
+  followers: number;
+  popularity: number;
+  fromListening: boolean; // true = top Spotify réel, false = favori le plus populaire
+}
+
+const TopArtistBlock: React.FC<{ artist: TopArtistData | undefined; isLoading: boolean }> = ({ artist, isLoading }) => {
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
 
@@ -223,7 +232,7 @@ const TopArtistBlock: React.FC<{ favorite: FavoriteArtist | undefined; isLoading
     return <div className="rounded-2xl bg-white/60 dark:bg-white/5 border border-gray-100 dark:border-white/8 h-40 animate-pulse" />;
   }
 
-  if (!favorite) {
+  if (!artist) {
     return (
       <div className="rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/8 p-5 flex flex-col items-center justify-center gap-2 text-center h-40">
         <MicrophoneIcon className="w-8 h-8 text-secondary" />
@@ -232,7 +241,6 @@ const TopArtistBlock: React.FC<{ favorite: FavoriteArtist | undefined; isLoading
     );
   }
 
-  const { artist } = favorite;
   const hasImage = !!artist.imageUrl && !imgError;
 
   return (
@@ -240,7 +248,6 @@ const TopArtistBlock: React.FC<{ favorite: FavoriteArtist | undefined; isLoading
       onClick={() => artist.spotifyId && navigate(`/artists/${artist.spotifyId}`)}
       className="relative rounded-2xl overflow-hidden block group cursor-pointer h-40"
     >
-      {/* Background image */}
       {hasImage ? (
         <>
           <img
@@ -255,17 +262,15 @@ const TopArtistBlock: React.FC<{ favorite: FavoriteArtist | undefined; isLoading
         <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-accent-500/20" />
       )}
 
-      {/* Badge top */}
       <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
         <FireIcon className="w-3 h-3" />
-        Top artiste
+        {artist.fromListening ? 'Top écouté' : 'Top artiste'}
       </div>
 
-      {/* Info */}
       <div className="absolute bottom-0 left-0 right-0 p-4">
         <p className="text-white font-black text-base leading-tight truncate">{artist.name}</p>
         <p className="text-white/60 text-xs mt-0.5">
-          {formatFollowers(artist.followers || 0)} fans · {artist.popularity || 0}/100
+          {formatFollowers(artist.followers)} fans · {artist.popularity}/100
         </p>
       </div>
     </div>
@@ -280,9 +285,10 @@ const DashboardPage: React.FC = () => {
   const navigate   = useNavigate();
   const { isReady, playAlbum, currentAlbumId, isPlaying } = useSpotifyPlayer();
 
-  const [favorites, setFavorites] = useState<FavoriteArtist[]>([]);
-  const [releases,  setReleases]  = useState<Release[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [favorites,        setFavorites]        = useState<FavoriteArtist[]>([]);
+  const [releases,         setReleases]         = useState<Release[]>([]);
+  const [topSpotifyArtist, setTopSpotifyArtist] = useState<TopArtistData | null>(null);
+  const [isLoading,        setIsLoading]        = useState(true);
 
   const SYNC_KEY      = 'releases_last_sync';
   const SYNC_INTERVAL = 60 * 60 * 1000;
@@ -297,6 +303,24 @@ const DashboardPage: React.FC = () => {
     ]);
     if (favsRes.success && favsRes.data) setFavorites(favsRes.data);
     if (relRes.success && relRes.data)   setReleases(relRes.data);
+
+    // Top artiste Spotify réel (compte connecté requis)
+    try {
+      const topArtists = await statsService.getTopArtists('medium_term', 1);
+      if (topArtists.length > 0) {
+        const a = topArtists[0];
+        setTopSpotifyArtist({
+          name:          a.name,
+          imageUrl:      a.images?.[0]?.url,
+          spotifyId:     a.id,
+          followers:     a.followers?.total ?? 0,
+          popularity:    a.popularity ?? 0,
+          fromListening: true,
+        });
+      }
+    } catch {
+      // Spotify non connecté → on utilisera le favori le plus populaire
+    }
   }, []);
 
   useEffect(() => {
@@ -333,9 +357,21 @@ const DashboardPage: React.FC = () => {
     })
     .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
 
-  const topFavorite = favorites.length > 0
-    ? [...favorites].sort((a, b) => (b.artist.popularity || 0) - (a.artist.popularity || 0))[0]
-    : undefined;
+  const topArtist: TopArtistData | undefined = topSpotifyArtist ?? (
+    favorites.length > 0
+      ? (() => {
+          const fav = [...favorites].sort((a, b) => (b.artist.popularity || 0) - (a.artist.popularity || 0))[0];
+          return {
+            name:          fav.artist.name,
+            imageUrl:      fav.artist.imageUrl ?? undefined,
+            spotifyId:     fav.artist.spotifyId ?? undefined,
+            followers:     fav.artist.followers || 0,
+            popularity:    fav.artist.popularity || 0,
+            fromListening: false,
+          };
+        })()
+      : undefined
+  );
 
   const totalGenres = React.useMemo(() => {
     const s = new Set<string>();
@@ -406,7 +442,7 @@ const DashboardPage: React.FC = () => {
           {/* Bloc droite — stats + top artiste */}
           <div className="flex flex-col gap-4 animate-entrance" style={{ animationDelay: '120ms' }}>
             <StatsBlock stats={stats} isLoading={isLoading} />
-            <TopArtistBlock favorite={topFavorite} isLoading={isLoading} />
+            <TopArtistBlock artist={topArtist} isLoading={isLoading} />
           </div>
 
           {/* Bannière prochaine sortie — discrète, pleine largeur */}
