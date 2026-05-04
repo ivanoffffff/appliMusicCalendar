@@ -113,11 +113,10 @@ const ChartTooltip: React.FC<any> = ({ active, payload, label }) => {
 // ─── Tooltip dédié au graphique horaire ───────────────────────────────────────
 const HourTooltip: React.FC<any> = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
-  const { hour, count } = payload[0].payload as { hour: number; count: number };
+  const { hour, count, isPeak } = payload[0].payload as { hour: number; count: number; isPeak: boolean };
   if (count === 0) return null;
 
   const nextHour = (hour + 1) % 24;
-  const isPeak   = payload[0].fill === '#6366f1'; // couleur du pic
 
   return (
     <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-white/10 rounded-xl px-3.5 py-2.5 shadow-lg text-xs pointer-events-none">
@@ -230,8 +229,9 @@ const StatsPage: React.FC = () => {
   }, [notConnected]);
 
   const genres   = aggregateGenres(topArtists);
-  const hourData = aggregateByHour(recentItems);
-  const peakHour = hourData.reduce((max, d) => d.count > max.count ? d : max, { hour: 0, label: '0h', count: 0 });
+  const hourDataRaw = aggregateByHour(recentItems);
+  const peakHour    = hourDataRaw.reduce((max, d) => d.count > max.count ? d : max, { hour: 0, label: '0h', count: 0 });
+  const hourData    = hourDataRaw.map(d => ({ ...d, isPeak: d.count === peakHour.count && d.count > 0 }));
 
   // ── Not connected state ───────────────────────────────────────────────────
   if (notConnected) {
