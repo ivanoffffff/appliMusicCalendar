@@ -269,6 +269,14 @@ export const SpotifyPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
     );
 
     setCurrentAlbumId(spotifyAlbumId);
+
+    // Fallback : si le SDK démarre en pause (ex. première connexion), on force la lecture
+    window.setTimeout(async () => {
+      const state = await playerRef.current?.getCurrentState();
+      if (state?.paused) {
+        await playerRef.current?.togglePlay();
+      }
+    }, 800);
   }, []);
 
   // Garder startPlaybackRef à jour pour les listeners (qui capturent la ref, pas la valeur)

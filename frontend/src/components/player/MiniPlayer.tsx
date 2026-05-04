@@ -129,8 +129,7 @@ const MiniPlayer: React.FC = () => {
               <img
                 src={currentTrack.imageUrl}
                 alt={currentTrack.albumName}
-                className={`w-10 h-10 rounded-lg object-cover shadow-md ${isPlaying ? 'animate-spin-slow' : ''}`}
-                style={{ animationDuration: '8s' }}
+                className="w-10 h-10 rounded-lg object-cover shadow-md"
               />
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#1db954] rounded-full flex items-center justify-center">
                 <SpotifyIcon />
