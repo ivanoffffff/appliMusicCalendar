@@ -111,12 +111,14 @@ class ReleaseService {
         return { message: '0 nouvelles sorties synchronisées', releases: [] };
       }
 
+      const uniqueSpotifyIds = [...new Set(allSpotifyIds)];
       const existingRows = await prisma.release.findMany({
-        where: { spotifyId: { in: allSpotifyIds } },
+        where: { spotifyId: { in: uniqueSpotifyIds } },
         select: { spotifyId: true },
       });
       const existingIds = new Set(existingRows.map(r => r.spotifyId));
-      console.log(`[sync] ${existingIds.size} déjà en DB, ${allSpotifyIds.length - existingIds.size} nouvelle(s) à insérer`);
+      const trueNewCount = uniqueSpotifyIds.filter(id => !existingIds.has(id)).length;
+      console.log(`[sync] ${uniqueSpotifyIds.length} uniques (${allSpotifyIds.length - uniqueSpotifyIds.length} doublons collabs), ${existingIds.size} en DB, ${trueNewCount} vraiment nouvelles`);
 
       // ── Étape 3 : fetch Deezer une seule fois par artiste qui a des nouveautés
       const artistsNeedingDeezer = artistReleasesList.filter(({ artist, releases }) =>
@@ -214,7 +216,7 @@ class ReleaseService {
         }
       }
 
-      console.log(`[sync] ✅ ${newReleases.length}/${allSpotifyIds.length - existingIds.size} release(s) insérée(s) en DB`);
+      console.log(`[sync] ✅ ${newReleases.length}/${trueNewCount} release(s) insérée(s) en DB`);
 
       return {
         message: `${newReleases.length} nouvelles sorties synchronisées`,
