@@ -77,6 +77,8 @@ class ReleaseService {
         include: { artist: true },
       });
 
+      console.log(`[sync] userId=${userId} — ${userFavorites.length} artiste(s) favori(s)`);
+
       if (userFavorites.length === 0) {
         return { message: 'Aucun artiste favori trouvé', releases: [] };
       }
@@ -87,6 +89,7 @@ class ReleaseService {
         if (!artist.spotifyId) continue;
         try {
           const releases = await this.getArtistReleases(artist.spotifyId);
+          console.log(`[sync] ${artist.name} → ${releases.length} release(s) dans la fenêtre`);
           if (releases.length > 0) artistReleasesList.push({ artist, releases });
         } catch (err: any) {
           if (err?.response?.status === 429) {
@@ -102,6 +105,8 @@ class ReleaseService {
       // ── Étape 2 : une seule requête DB pour savoir quelles releases existent ──
       const allSpotifyIds = artistReleasesList.flatMap(({ releases }) => releases.map(r => r.id));
 
+      console.log(`[sync] ${allSpotifyIds.length} release(s) Spotify trouvée(s) au total`);
+
       if (allSpotifyIds.length === 0) {
         return { message: '0 nouvelles sorties synchronisées', releases: [] };
       }
@@ -111,6 +116,7 @@ class ReleaseService {
         select: { spotifyId: true },
       });
       const existingIds = new Set(existingRows.map(r => r.spotifyId));
+      console.log(`[sync] ${existingIds.size} déjà en DB, ${allSpotifyIds.length - existingIds.size} nouvelle(s) à insérer`);
 
       // ── Étape 3 : fetch Deezer une seule fois par artiste qui a des nouveautés
       const artistsNeedingDeezer = artistReleasesList.filter(({ artist, releases }) =>
