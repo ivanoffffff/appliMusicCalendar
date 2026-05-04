@@ -214,6 +214,8 @@ class ReleaseService {
         }
       }
 
+      console.log(`[sync] ✅ ${newReleases.length}/${allSpotifyIds.length - existingIds.size} release(s) insérée(s) en DB`);
+
       return {
         message: `${newReleases.length} nouvelles sorties synchronisées`,
         releases: newReleases,
