@@ -113,7 +113,8 @@ const ChartTooltip: React.FC<any> = ({ active, payload, label }) => {
 // ─── Tooltip dédié au graphique horaire ───────────────────────────────────────
 const HourTooltip: React.FC<any> = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
-  const { hour, count, isPeak } = payload[0].payload as { hour: number; count: number; isPeak: boolean };
+  const { hour, isPeak } = payload[0].payload as { hour: number; isPeak: boolean };
+  const count = payload[0].value as number;
 
   const nextHour = (hour + 1) % 24;
 
